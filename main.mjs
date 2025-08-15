@@ -1,6 +1,6 @@
 import { combineTextFiles } from "./amalgamate_text_files.mjs";
 import { processImagesWithOCR } from "./ocr_processor.mjs";
-import { processTextToSpeech } from "./process_ttts.mjs";
+import { processTextToSpeech } from "./process_tts.mjs";
 import { cleanCompleteText } from "./text_cleaner.mjs";
 
 /**

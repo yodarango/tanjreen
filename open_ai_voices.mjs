@@ -1,7 +1,7 @@
-// npm i openai
-import fs from "fs";
+// String to get a sample of all the available voices by AI
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import fs from "fs";
 
 // Load environment variables
 dotenv.config();
