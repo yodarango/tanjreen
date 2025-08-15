@@ -1,10 +1,10 @@
 {
-  "name": "tts",
+  "name": "audiobook-converter",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "module": "index.js",
-  "type": "module",
+  "description": "Transform images into audiobooks using OCR and AI",
+  "main": "main.js",
+  "homepage": ".",
+  "author": "Daniel Rangel",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "ocr": "node ocr_processor.mjs",
@@ -13,7 +13,10 @@
     "clean": "node text_cleaner.mjs",
     "process-all": "node process_all.mjs",
     "server": "node server.mjs",
-    "start": "node server.mjs"
+    "electron": "electron .",
+    "electron-dev": "electron . --dev",
+    "start": "electron .",
+    "web": "node server.mjs"
   },
   "keywords": [],
   "author": "",
@@ -24,5 +27,8 @@
     "heic-convert": "^2.1.0",
     "node-tesseract-ocr": "^2.2.1",
     "openai": "^4.26.0"
+  },
+  "devDependencies": {
+    "electron": "^37.3.0"
   }
 }
