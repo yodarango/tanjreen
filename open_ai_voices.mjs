@@ -25,7 +25,7 @@ const voices = [
 ];
 
 const text =
-  "When your credit balance reaches zero dollars, your API requests will stop working. Enable automatic recharge to automatically keep your credit balance topped up.";
+  "in the beginning was the Word, and the Word was with God, and the Word was God. All things were made by Him, and without Him was not any thing made that was made.";
 
 (async () => {
   for (const v of voices) {
