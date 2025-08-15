@@ -11,13 +11,16 @@
     "tts": "node index.mjs",
     "combine": "node amalgamate_text_files.mjs",
     "clean": "node text_cleaner.mjs",
-    "process-all": "node process_all.mjs"
+    "process-all": "node process_all.mjs",
+    "server": "node server.mjs",
+    "start": "node server.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^17.2.1",
+    "express": "^5.1.0",
     "heic-convert": "^2.1.0",
     "node-tesseract-ocr": "^2.2.1",
     "openai": "^4.26.0"
