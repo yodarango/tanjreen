@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+RESOURCES_DIR="$SCRIPT_DIR/../Resources"
+
+# Change to the resources directory
+cd "$RESOURCES_DIR"
+
+# Check if Node.js is available
+if ! command -v node &> /dev/null; then
+    osascript -e 'display dialog "Node.js is required to run this application. Please install Node.js from nodejs.org" buttons {"OK"} default button "OK"'
+    exit 1
+fi
+
+# Check if npm dependencies are installed
+if [ ! -d "node_modules" ]; then
+    osascript -e 'display dialog "Installing dependencies... This may take a few minutes." buttons {"OK"} default button "OK"'
+    npm install
+fi
+
+# Start the application
+npm run electron

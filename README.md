@@ -1,6 +1,6 @@
-# OCR + Text-to-Speech Pipeline
+# 🍊 Tangerin - OCR + Text-to-Speech Pipeline
 
-This project provides a complete pipeline for processing images with OCR (Optical Character Recognition) and converting the extracted text to speech using OpenAI's TTS API.
+Transform your images into complete audiobooks using OCR and AI. Tangerin provides a complete pipeline for processing images with OCR (Optical Character Recognition) and converting the extracted text to speech using OpenAI's TTS API.
 
 ## Prerequisites
 

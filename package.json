@@ -1,5 +1,5 @@
 {
-  "name": "audiobook-converter",
+  "name": "tangerin",
   "version": "1.0.0",
   "description": "Transform images into audiobooks using OCR and AI",
   "main": "main.js",
@@ -16,7 +16,9 @@
     "electron": "electron .",
     "electron-dev": "electron . --dev",
     "start": "electron .",
-    "web": "node server.mjs"
+    "web": "node server.mjs",
+    "build-mac": "./build-mac.sh",
+    "package": "./package-app.sh"
   },
   "keywords": [],
   "author": "",

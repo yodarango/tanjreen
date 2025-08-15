@@ -1,0 +1,36 @@
+{
+  "name": "tangerin",
+  "version": "1.0.0",
+  "description": "Transform images into audiobooks using OCR and AI",
+  "main": "main.js",
+  "homepage": ".",
+  "author": "Daniel Rangel",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "ocr": "node ocr_processor.mjs",
+    "tts": "node index.mjs",
+    "combine": "node amalgamate_text_files.mjs",
+    "clean": "node text_cleaner.mjs",
+    "process-all": "node process_all.mjs",
+    "server": "node server.mjs",
+    "electron": "electron .",
+    "electron-dev": "electron . --dev",
+    "start": "electron .",
+    "web": "node server.mjs",
+    "build-mac": "./build-mac.sh",
+    "package": "./package-app.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "heic-convert": "^2.1.0",
+    "node-tesseract-ocr": "^2.2.1",
+    "openai": "^4.26.0"
+  },
+  "devDependencies": {
+    "electron": "^37.3.0"
+  }
+}
