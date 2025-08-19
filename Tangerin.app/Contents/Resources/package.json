@@ -12,6 +12,7 @@
     "combine": "node amalgamate_text_files.mjs",
     "clean": "node text_cleaner.mjs",
     "process-all": "node process_all.mjs",
+    "concatenate": "node concatenate_audio.mjs",
     "server": "node server.mjs",
     "electron": "electron .",
     "electron-dev": "electron . --dev",
