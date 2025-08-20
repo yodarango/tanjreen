@@ -175,9 +175,15 @@ function updateEnvFile(bookTitle, voice) {
 // Function to start the transformation process
 function startTransformationProcess() {
   const child = spawn("node", ["Tangerin.app/Contents/Resources/main.mjs"], {
-    stdio: ["inherit", "inherit", "inherit"],
+    stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });
+
+  // Check if spawn was successful
+  if (!child) {
+    console.error("❌ Failed to spawn child process");
+    return;
+  }
 
   let currentStep = 0;
   const stepKeywords = [
@@ -190,6 +196,7 @@ function startTransformationProcess() {
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
+    console.log(output); // Forward to console
     const lines = output.split("\n").filter((line) => line.trim());
 
     lines.forEach((line) => {
@@ -215,8 +222,19 @@ function startTransformationProcess() {
 
   child.stderr.on("data", (data) => {
     const error = data.toString();
+    console.error(error); // Forward to console
     transformationState.messages.push({
       text: error.trim(),
+      type: "error",
+    });
+  });
+
+  child.on("error", (error) => {
+    console.error("❌ Spawn error:", error);
+    transformationState.isRunning = false;
+    transformationState.error = `Spawn error: ${error.message}`;
+    transformationState.messages.push({
+      text: `❌ Failed to start process: ${error.message}`,
       type: "error",
     });
   });
