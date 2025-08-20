@@ -4,7 +4,7 @@
   "description": "Transform images into audiobooks using OCR and AI",
   "main": "main.js",
   "homepage": ".",
-  "author": "Daniel Rangel",
+  "author": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "ocr": "node ocr_processor.mjs",
@@ -14,15 +14,16 @@
     "process-all": "node process_all.mjs",
     "concatenate": "node concatenate_audio.mjs",
     "server": "node server.mjs",
+    "server-dev": "nodemon server.mjs",
     "electron": "electron .",
     "electron-dev": "electron . --dev",
     "start": "electron .",
     "web": "node server.mjs",
+    "web-dev": "nodemon server.mjs",
     "build-mac": "./build-mac.sh",
     "package": "./package-app.sh"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^17.2.1",
@@ -32,6 +33,7 @@
     "openai": "^4.26.0"
   },
   "devDependencies": {
-    "electron": "^37.3.0"
+    "electron": "^37.3.0",
+    "nodemon": "^3.1.10"
   }
 }

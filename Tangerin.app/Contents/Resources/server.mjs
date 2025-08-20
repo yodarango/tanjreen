@@ -174,8 +174,8 @@ function updateEnvFile(bookTitle, voice) {
 
 // Function to start the transformation process
 function startTransformationProcess() {
-  const child = spawn("node", ["process_all.mjs"], {
-    stdio: ["pipe", "pipe", "pipe"],
+  const child = spawn("node", ["main.mjs"], {
+    stdio: ["inherit", "inherit", "inherit"],
     cwd: process.cwd(),
   });
 
