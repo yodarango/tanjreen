@@ -1,5 +1,5 @@
+import { processImagesWithOCR } from "./process_images_with_ocr.mjs";
 import { combineTextFiles } from "./amalgamate_text_files.mjs";
-import { processImagesWithOCR } from "./ocr_processor.mjs";
 import { processTextToSpeech } from "./process_tts.mjs";
 import { cleanCompleteText } from "./text_cleaner.mjs";
 
@@ -14,12 +14,13 @@ async function process() {
   // Step 1: Process images with OCR
   console.log("📖 Step 1: Processing images with OCR...");
   await processImagesWithOCR();
-  return;
+  console.log("");
 
   // Step 2: Combine all text files
   console.log("📚 Step 2: Combining text files...");
   await combineTextFiles();
   console.log("");
+  return;
 
   // Step 3: Clean text with AI
   console.log("🧹 Step 3: Cleaning text with OpenAI...");

@@ -7,7 +7,6 @@ class AudiobookConverter {
     this.initializeElements();
     this.setupEventListeners();
     this.loadImages();
-    this.setupVoiceSamples();
   }
 
   initializeElements() {
@@ -30,26 +29,11 @@ class AudiobookConverter {
     this.voiceSelect.addEventListener("change", () => this.updateVoiceSample());
   }
 
-  setupVoiceSamples() {
-    this.voiceSamples = {
-      alloy: "/api/voice-sample/alloy",
-      ash: "/api/voice-sample/ash",
-      ballad: "/api/voice-sample/ballad",
-      coral: "/api/voice-sample/coral",
-      echo: "/api/voice-sample/echo",
-      fable: "/api/voice-sample/fable",
-      nova: "/api/voice-sample/nova",
-      onyx: "/api/voice-sample/onyx",
-      sage: "/api/voice-sample/sage",
-      shimmer: "/api/voice-sample/shimmer",
-      verse: "/api/voice-sample/verse",
-    };
-    this.updateVoiceSample();
-  }
-
   updateVoiceSample() {
     const selectedVoice = this.voiceSelect.value;
-    this.voiceSamplePlayer.src = this.voiceSamples[selectedVoice];
+    this.voiceSamplePlayer.src =
+      "/voices/sample-" + selectedVoice.toLowerCase() + ".mp3";
+    console.log(this.voiceSamplePlayer);
   }
 
   async playVoiceSample() {
@@ -57,6 +41,7 @@ class AudiobookConverter {
       this.playVoiceSampleBtn.textContent = "🔄 Loading...";
       this.playVoiceSampleBtn.disabled = true;
 
+      console.log(this.voiceSamplePlayer);
       await this.voiceSamplePlayer.play();
 
       this.playVoiceSampleBtn.textContent = "🔊 Play Sample";

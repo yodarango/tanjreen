@@ -30,7 +30,7 @@ let transformationState = {
 // Get list of images in the images directory so we can show them to the user
 app.get("/api/images", (req, res) => {
   try {
-    const imagesDir = "./images";
+    const imagesDir = process.env.IMAGES_DIR || "./server/content/1.pending";
 
     if (!fs.existsSync(imagesDir)) {
       return res.json([]);
@@ -104,7 +104,7 @@ app.get("/api/progress", (req, res) => {
 
 // This is in charge of running every single part of the process and update the global state
 function startTransformationProcess(bookTitle, voice) {
-  const child = spawn("node", ["./process.web.mjs"], {
+  const child = spawn("node", ["./server/process.web.mjs"], {
     stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });
@@ -186,6 +186,4 @@ app.listen(PORT, () => {
   console.log(
     `🚀 Audiobook Converter Server running on http://localhost:${PORT}`
   );
-  console.log(`📁 Serving interface from ./public/`);
-  console.log(`🔧 Make sure your images are in ./images/ directory`);
 });

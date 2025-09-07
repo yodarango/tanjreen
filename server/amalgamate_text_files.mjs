@@ -1,15 +1,12 @@
 import fs from "fs";
 import path from "path";
-import dotenv from "dotenv";
 
-// Load environment variables
-dotenv.config();
-
-/**
+/* ********************************************************************************
  * Combine all text files from /text directory into a single complete.txt file
  * Files are combined in numerical order (1.txt, 2.txt, 3.txt, etc.)
+ * ********************************************************************************
  */
-async function combineTextFiles() {
+async function AmalgamateFiles() {
   const textDir = "./text";
   const outputFile = path.join(textDir, "complete.txt");
 
@@ -111,18 +108,5 @@ async function combineTextFiles() {
   }
 }
 
-/**
- * Main function to run the text combiner
- */
-async function main() {
-  console.log("🚀 Starting text file combination...");
-  await combineTextFiles();
-}
-
 // Export the function for use in other modules
-export { combineTextFiles };
-
-// Run if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
+export { AmalgamateFiles };
