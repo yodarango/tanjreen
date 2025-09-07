@@ -17,17 +17,17 @@ app.use(express.static("public"));
 // Global state for tracking progress
 let transformationState = {
   isRunning: false,
-  progress: 0,
-  currentStep: 0,
-  messages: [],
   completed: false,
-  error: null,
   outputPath: null,
+  messages: [],
+  currentStep: 0,
+  progress: 0,
+  error: null,
 };
 
 // API Routes
 
-// Get list of images in the images directory
+// Get list of images in the images directory so we can show them to the user
 app.get("/api/images", (req, res) => {
   try {
     const imagesDir = "./images";
@@ -59,43 +59,7 @@ app.get("/api/images", (req, res) => {
   }
 });
 
-// Serve voice samples from voices folder
-app.get("/api/voice-sample/:voice", (req, res) => {
-  try {
-    const voice = req.params.voice;
-    const samplePath = path.join("./voices", `sample-${voice}.mp3`);
-
-    // Check if the voice sample file exists
-    if (!fs.existsSync(samplePath)) {
-      return res
-        .status(404)
-        .json({ error: `Voice sample not found for: ${voice}` });
-    }
-
-    // Set appropriate headers for audio streaming
-    res.set({
-      "Content-Type": "audio/mpeg",
-      "Accept-Ranges": "bytes",
-      "Cache-Control": "public, max-age=3600", // Cache for 1 hour
-    });
-
-    // Stream the audio file
-    const audioStream = fs.createReadStream(samplePath);
-    audioStream.pipe(res);
-
-    audioStream.on("error", (error) => {
-      console.error("Error streaming voice sample:", error);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "Failed to stream voice sample" });
-      }
-    });
-  } catch (error) {
-    console.error("Error serving voice sample:", error);
-    res.status(500).json({ error: "Failed to serve voice sample" });
-  }
-});
-
-// Start transformation process
+// Once the user click start transformation, this will be ran
 app.post("/api/start-transformation", async (req, res) => {
   try {
     const { bookTitle, voice } = req.body;
@@ -112,22 +76,19 @@ app.post("/api/start-transformation", async (req, res) => {
         .json({ error: "Book title and voice are required" });
     }
 
-    // Reset state
+    // Tell the state we are starting to run
     transformationState = {
-      isRunning: true,
-      progress: 0,
-      currentStep: 0,
-      messages: [],
       completed: false,
-      error: null,
       outputPath: null,
+      isRunning: true,
+      messages: [],
+      currentStep: 0,
+      progress: 0,
+      error: null,
     };
 
-    // Update environment variables
-    updateEnvFile(bookTitle, voice);
-
     // Start the transformation process
-    startTransformationProcess();
+    startTransformationProcess(bookTitle, voice);
 
     res.json({ success: true, message: "Transformation started" });
   } catch (error) {
@@ -141,40 +102,9 @@ app.get("/api/progress", (req, res) => {
   res.json(transformationState);
 });
 
-// Helper function to update .env file
-function updateEnvFile(bookTitle, voice) {
-  try {
-    let envContent = fs.readFileSync(".env", "utf8");
-
-    // Update or add BOOK_TITLE
-    if (envContent.includes("BOOK_TITLE=")) {
-      envContent = envContent.replace(
-        /BOOK_TITLE=.*/,
-        `BOOK_TITLE="${bookTitle}"`
-      );
-    } else {
-      envContent += `\nBOOK_TITLE="${bookTitle}"`;
-    }
-
-    // Update or add VOICE
-    if (envContent.includes("VOICE=")) {
-      envContent = envContent.replace(/VOICE=.*/, `VOICE=${voice}`);
-    } else {
-      envContent += `\nVOICE=${voice}`;
-    }
-
-    fs.writeFileSync(".env", envContent);
-
-    // Reload environment variables
-    dotenv.config();
-  } catch (error) {
-    console.error("Error updating .env file:", error);
-  }
-}
-
-// Function to start the transformation process
-function startTransformationProcess() {
-  const child = spawn("node", ["Tangerin.app/Contents/Resources/main.mjs"], {
+// This is in charge of running every single part of the process and update the global state
+function startTransformationProcess(bookTitle, voice) {
+  const child = spawn("node", ["./process.web.mjs"], {
     stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });
@@ -196,7 +126,7 @@ function startTransformationProcess() {
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
-    console.log(output); // Forward to console
+    console.log(output);
     const lines = output.split("\n").filter((line) => line.trim());
 
     lines.forEach((line) => {
@@ -209,36 +139,23 @@ function startTransformationProcess() {
             (currentStep / stepKeywords.length) * 100;
         }
       });
-
-      // Add message to state
-      if (line.trim()) {
-        transformationState.messages.push({
-          text: line.trim(),
-          type: getMessageType(line),
-        });
-      }
     });
   });
 
+  // if the spawn process fails, then alert the console
   child.stderr.on("data", (data) => {
     const error = data.toString();
-    console.error(error); // Forward to console
-    transformationState.messages.push({
-      text: error.trim(),
-      type: "error",
-    });
+    console.error(error);
   });
 
+  // another potential for failure
   child.on("error", (error) => {
     console.error("❌ Spawn error:", error);
     transformationState.isRunning = false;
     transformationState.error = `Spawn error: ${error.message}`;
-    transformationState.messages.push({
-      text: `❌ Failed to start process: ${error.message}`,
-      type: "error",
-    });
   });
 
+  // on closing alert too.
   child.on("close", (code) => {
     transformationState.isRunning = false;
 
@@ -246,12 +163,10 @@ function startTransformationProcess() {
       transformationState.completed = true;
       transformationState.progress = 100;
       transformationState.currentStep = stepKeywords.length;
-
-      // Set output path
-      const bookTitle = process.env.BOOK_TITLE || "audiobook";
       const sanitizedTitle = bookTitle.toLowerCase().replace(/[^a-z0-9]/g, "_");
       transformationState.outputPath = `./audio/${sanitizedTitle}/complete.mp3`;
 
+      console.log(transformationState);
       transformationState.messages.push({
         text: "🎉 Transformation completed successfully!",
         type: "success",
@@ -264,31 +179,6 @@ function startTransformationProcess() {
       });
     }
   });
-}
-
-// Helper function to determine message type based on content
-function getMessageType(message) {
-  if (
-    message.includes("❌") ||
-    message.includes("Error") ||
-    message.includes("error")
-  ) {
-    return "error";
-  } else if (
-    message.includes("⚠️") ||
-    message.includes("Warning") ||
-    message.includes("Skipping")
-  ) {
-    return "warning";
-  } else if (
-    message.includes("✅") ||
-    message.includes("🎉") ||
-    message.includes("completed")
-  ) {
-    return "success";
-  } else {
-    return "info";
-  }
 }
 
 // Start server

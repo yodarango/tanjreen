@@ -19,7 +19,6 @@ let transformationState = {
   isRunning: false,
   progress: 0,
   currentStep: 0,
-  messages: [],
   completed: false,
   error: null,
   outputPath: null,
@@ -117,7 +116,6 @@ app.post("/api/start-transformation", async (req, res) => {
       isRunning: true,
       progress: 0,
       currentStep: 0,
-      messages: [],
       completed: false,
       error: null,
       outputPath: null,
@@ -174,10 +172,16 @@ function updateEnvFile(bookTitle, voice) {
 
 // Function to start the transformation process
 function startTransformationProcess() {
-  const child = spawn("node", ["main.mjs"], {
-    stdio: ["inherit", "inherit", "inherit"],
+  const child = spawn("node", ["Tangerin.app/Contents/Resources/main.mjs"], {
+    stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });
+
+  // Check if spawn was successful
+  if (!child) {
+    console.error("❌ Failed to spawn child process");
+    return;
+  }
 
   let currentStep = 0;
   const stepKeywords = [
@@ -190,6 +194,7 @@ function startTransformationProcess() {
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
+    console.log(output); // Forward to console
     const lines = output.split("\n").filter((line) => line.trim());
 
     lines.forEach((line) => {
@@ -202,23 +207,18 @@ function startTransformationProcess() {
             (currentStep / stepKeywords.length) * 100;
         }
       });
-
-      // Add message to state
-      if (line.trim()) {
-        transformationState.messages.push({
-          text: line.trim(),
-          type: getMessageType(line),
-        });
-      }
     });
   });
 
   child.stderr.on("data", (data) => {
     const error = data.toString();
-    transformationState.messages.push({
-      text: error.trim(),
-      type: "error",
-    });
+    console.error(error); // Forward to console
+  });
+
+  child.on("error", (error) => {
+    console.error("❌ Spawn error:", error);
+    transformationState.isRunning = false;
+    transformationState.error = `Spawn error: ${error.message}`;
   });
 
   child.on("close", (code) => {
@@ -246,31 +246,6 @@ function startTransformationProcess() {
       });
     }
   });
-}
-
-// Helper function to determine message type based on content
-function getMessageType(message) {
-  if (
-    message.includes("❌") ||
-    message.includes("Error") ||
-    message.includes("error")
-  ) {
-    return "error";
-  } else if (
-    message.includes("⚠️") ||
-    message.includes("Warning") ||
-    message.includes("Skipping")
-  ) {
-    return "warning";
-  } else if (
-    message.includes("✅") ||
-    message.includes("🎉") ||
-    message.includes("completed")
-  ) {
-    return "success";
-  } else {
-    return "info";
-  }
 }
 
 // Start server

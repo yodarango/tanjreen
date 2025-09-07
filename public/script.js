@@ -3,7 +3,6 @@ class AudiobookConverter {
     this.isProcessing = false;
     this.currentStep = 0;
     this.totalSteps = 5;
-    this.consoleLines = [];
 
     this.initializeElements();
     this.setupEventListeners();
@@ -20,9 +19,6 @@ class AudiobookConverter {
     this.startBtn = document.getElementById("startTransformation");
     this.progressFill = document.getElementById("progressFill");
     this.progressText = document.getElementById("progressText");
-    this.console = document.getElementById("console");
-    this.clearConsoleBtn = document.getElementById("clearConsole");
-    this.downloadLogsBtn = document.getElementById("downloadLogs");
     this.voiceSamplePlayer = document.getElementById("voiceSamplePlayer");
   }
 
@@ -31,8 +27,6 @@ class AudiobookConverter {
     this.playVoiceSampleBtn.addEventListener("click", () =>
       this.playVoiceSample()
     );
-    this.clearConsoleBtn.addEventListener("click", () => this.clearConsole());
-    this.downloadLogsBtn.addEventListener("click", () => this.downloadLogs());
     this.voiceSelect.addEventListener("change", () => this.updateVoiceSample());
   }
 
@@ -68,10 +62,7 @@ class AudiobookConverter {
       this.playVoiceSampleBtn.textContent = "🔊 Play Sample";
       this.playVoiceSampleBtn.disabled = false;
     } catch (error) {
-      this.addConsoleMessage(
-        "Error playing voice sample: " + error.message,
-        "error"
-      );
+      console.error("Error playing voice sample:", error);
       this.playVoiceSampleBtn.textContent = "🔊 Play Sample";
       this.playVoiceSampleBtn.disabled = false;
     }
@@ -87,18 +78,9 @@ class AudiobookConverter {
 
       if (images.length > 0) {
         this.startBtn.disabled = false;
-        this.addConsoleMessage(
-          `Found ${images.length} images ready for processing`,
-          "success"
-        );
-      } else {
-        this.addConsoleMessage(
-          "No images found in /images directory",
-          "warning"
-        );
       }
     } catch (error) {
-      this.addConsoleMessage("Error loading images: " + error.message, "error");
+      console.error("Error loading images:", error);
     }
   }
 
@@ -124,14 +106,10 @@ class AudiobookConverter {
     const voice = this.voiceSelect.value;
 
     if (!bookTitle) {
-      this.addConsoleMessage("Please enter a book title", "error");
+      alert("Please enter a book title");
       this.resetStartButton();
       return;
     }
-
-    this.addConsoleMessage("🚀 Starting transformation process...", "info");
-    this.addConsoleMessage(`📖 Book: ${bookTitle}`, "info");
-    this.addConsoleMessage(`🗣️ Voice: ${voice}`, "info");
 
     try {
       // Start the transformation process
@@ -153,10 +131,8 @@ class AudiobookConverter {
       // Start polling for progress updates
       this.pollProgress();
     } catch (error) {
-      this.addConsoleMessage(
-        "Error starting transformation: " + error.message,
-        "error"
-      );
+      console.error("Error starting transformation:", error);
+      alert("Error starting transformation: " + error.message);
       this.resetStartButton();
     }
   }
@@ -169,38 +145,19 @@ class AudiobookConverter {
       this.updateProgress(data.progress);
       this.updateSteps(data.currentStep);
 
-      if (data.messages && data.messages.length > 0) {
-        data.messages.forEach((msg) => {
-          this.addConsoleMessage(msg.text, msg.type || "info");
-        });
-      }
-
       if (data.completed) {
-        this.addConsoleMessage(
-          "🎉 Transformation completed successfully!",
-          "success"
-        );
-        this.addConsoleMessage(
-          `📁 Output saved to: ${data.outputPath}`,
-          "success"
-        );
         this.resetStartButton();
         this.updateStepStatus("step-complete", "completed", "✅");
+        alert("🎉 Transformation completed successfully!");
       } else if (data.error) {
-        this.addConsoleMessage(
-          "❌ Transformation failed: " + data.error,
-          "error"
-        );
         this.resetStartButton();
+        alert("❌ Transformation failed: " + data.error);
       } else {
         // Continue polling
         setTimeout(() => this.pollProgress(), 1000);
       }
     } catch (error) {
-      this.addConsoleMessage(
-        "Error checking progress: " + error.message,
-        "error"
-      );
+      console.error("Error checking progress:", error);
       this.resetStartButton();
     }
   }
@@ -236,42 +193,6 @@ class AudiobookConverter {
     const stepElement = document.getElementById(stepId);
     stepElement.className = "step " + className;
     stepElement.querySelector(".step-status").textContent = statusIcon;
-  }
-
-  addConsoleMessage(message, type = "info") {
-    const timestamp = new Date().toLocaleTimeString();
-    const line = `[${timestamp}] ${message}`;
-
-    this.consoleLines.push({ text: line, type: type });
-
-    const lineElement = document.createElement("div");
-    lineElement.className = `console-line ${type}`;
-    lineElement.textContent = line;
-
-    this.console.appendChild(lineElement);
-    this.console.scrollTop = this.console.scrollHeight;
-  }
-
-  clearConsole() {
-    this.console.innerHTML =
-      '<div class="console-line">Console cleared...</div>';
-    this.consoleLines = [];
-  }
-
-  downloadLogs() {
-    const logs = this.consoleLines.map((line) => line.text).join("\n");
-    const blob = new Blob([logs], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `audiobook-conversion-logs-${new Date()
-      .toISOString()
-      .slice(0, 19)}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   }
 
   resetStartButton() {

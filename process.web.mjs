@@ -6,16 +6,15 @@ import { cleanCompleteText } from "./text_cleaner.mjs";
 /**
  * Main function to run the complete pipeline
  */
-async function main() {
+async function process() {
   console.log(
     "🚀 Starting complete OCR + Text Combination + AI Cleaning + TTS pipeline..."
   );
-  console.log("");
 
   // Step 1: Process images with OCR
   console.log("📖 Step 1: Processing images with OCR...");
   await processImagesWithOCR();
-  console.log("");
+  return;
 
   // Step 2: Combine all text files
   console.log("📚 Step 2: Combining text files...");
@@ -36,4 +35,4 @@ async function main() {
 }
 
 // Run the main function
-main().catch(console.error);
+process().catch(console.error);

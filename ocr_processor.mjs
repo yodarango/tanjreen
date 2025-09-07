@@ -1,17 +1,11 @@
-import fs from "fs";
-import path from "path";
 import tesseract from "node-tesseract-ocr";
 import heicConvert from "heic-convert";
-import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
 
-// Load environment variables
-dotenv.config();
-
-/**
+/* ****************************************************************************
  * Convert HEIC file to JPEG format
- * @param {string} heicPath - Path to the HEIC file
- * @param {string} outputPath - Path where the JPEG should be saved
- * @returns {Promise<string>} - Path to the converted JPEG file
+ * ****************************************************************************
  */
 async function convertHeicToJpeg(heicPath, outputPath) {
   try {
@@ -29,9 +23,10 @@ async function convertHeicToJpeg(heicPath, outputPath) {
   }
 }
 
-/**
+/* ****************************************************************************
  * Process all images in the /images directory and extract text using OCR
  * Save the results as numbered text files in the /text directory
+ * ****************************************************************************
  */
 async function processImagesWithOCR() {
   const imagesDir = "./images";
@@ -153,18 +148,4 @@ async function processImagesWithOCR() {
   }
 }
 
-/**
- * Main function to run the OCR processor
- */
-async function main() {
-  console.log("🚀 Starting OCR processing...");
-  await processImagesWithOCR();
-}
-
-// Export the function for use in other modules
 export { processImagesWithOCR };
-
-// Run if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
