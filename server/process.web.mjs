@@ -19,7 +19,6 @@ async function startProcess() {
   );
   const bookTitle = tempData.bookTitle;
   const voice = tempData.voice;
-  console.log(" ---------- ", bookTitle, voice);
 
   console.log(
     "🚀 Starting complete OCR + Text Combination + AI Cleaning + TTS pipeline..."

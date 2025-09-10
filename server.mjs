@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import { spawn } from "child_process";
+import { validateTransformationRequest } from "./server/validate.mjs";
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -100,10 +101,15 @@ app.post("/api/start-transformation", async (req, res) => {
         .json({ error: "Transformation already in progress" });
     }
 
-    if (!bookTitle || !voice) {
-      return res
-        .status(400)
-        .json({ error: "Book title and voice are required" });
+    // Validate the request parameters
+    const validation = validateTransformationRequest(bookTitle, voice);
+
+    if (!validation.isValid) {
+      return res.status(400).json({
+        error: "Validation failed",
+        details: validation.errors,
+        availableVoices: validation.availableVoices,
+      });
     }
 
     // Tell the state we are starting to run
@@ -145,6 +151,20 @@ app.post("/api/start-transformation", async (req, res) => {
 // Get transformation progress
 app.get("/api/progress", (req, res) => {
   res.json(transformationState);
+});
+
+// Get available voices
+app.get("/api/voices", (req, res) => {
+  try {
+    const validation = validateTransformationRequest("dummy", "dummy");
+    res.json({
+      voices: validation.availableVoices,
+      count: validation.availableVoices.length,
+    });
+  } catch (error) {
+    console.error("Error getting voices:", error);
+    res.status(500).json({ error: "Failed to get available voices" });
+  }
 });
 
 // This is in charge of running every single part of the process and update the global state
