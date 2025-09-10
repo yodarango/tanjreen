@@ -18,6 +18,7 @@ app.use(express.static("public"));
 let transformationState = {
   isRunning: false,
   completed: false,
+  outputPath: null,
   messages: [],
   currentStep: 0,
   progress: 0,
@@ -78,6 +79,7 @@ app.post("/api/start-transformation", async (req, res) => {
     // Tell the state we are starting to run
     transformationState = {
       completed: false,
+
       isRunning: true,
       messages: [],
       currentStep: 0,
@@ -94,7 +96,7 @@ app.post("/api/start-transformation", async (req, res) => {
 
     const workingDir = process.env.WORKING_DIR;
     fs.writeFileSync(
-      workingDir + "/temp.json",
+      `${workingDir}/temp.json`,
       JSON.stringify(tempData, null, 2)
     );
 
