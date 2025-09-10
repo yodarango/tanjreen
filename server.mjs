@@ -93,7 +93,7 @@ app.get("/api/images", (req, res) => {
 // Once the user click start transformation, this will be ran
 app.post("/api/start-transformation", async (req, res) => {
   try {
-    const { bookTitle, voice } = req.body;
+    const { bookTitle, voice, language } = req.body;
 
     if (transformationState.isRunning) {
       return res
@@ -102,13 +102,18 @@ app.post("/api/start-transformation", async (req, res) => {
     }
 
     // Validate the request parameters
-    const validation = validateTransformationRequest(bookTitle, voice);
+    const validation = validateTransformationRequest(
+      bookTitle,
+      voice,
+      language
+    );
 
     if (!validation.isValid) {
       return res.status(400).json({
         error: "Validation failed",
         details: validation.errors,
         availableVoices: validation.availableVoices,
+        availableLanguages: validation.availableLanguages,
       });
     }
 
@@ -127,10 +132,11 @@ app.post("/api/start-transformation", async (req, res) => {
     const workingDir = process.env.WORKING_DIR;
     await cleanWorkingDirectory(workingDir);
 
-    // write the book title and voice to temp.json file under the working dir so that the child process can grab them later
+    // write the book title, voice, and language to temp.json file under the working dir so that the child process can grab them later
     const tempData = {
       bookTitle,
       voice,
+      language: language || null,
     };
 
     fs.writeFileSync(
@@ -164,6 +170,20 @@ app.get("/api/voices", (req, res) => {
   } catch (error) {
     console.error("Error getting voices:", error);
     res.status(500).json({ error: "Failed to get available voices" });
+  }
+});
+
+// Get available languages
+app.get("/api/languages", (req, res) => {
+  try {
+    const validation = validateTransformationRequest("dummy", "dummy");
+    res.json({
+      languages: validation.availableLanguages,
+      count: validation.availableLanguages.length,
+    });
+  } catch (error) {
+    console.error("Error getting languages:", error);
+    res.status(500).json({ error: "Failed to get available languages" });
   }
 });
 

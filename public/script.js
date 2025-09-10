@@ -12,6 +12,7 @@ class AudiobookConverter {
   initializeElements() {
     this.bookTitleInput = document.getElementById("bookTitle");
     this.voiceSelect = document.getElementById("voiceSelect");
+    this.languageSelect = document.getElementById("languageSelect");
     this.playVoiceSampleBtn = document.getElementById("playVoiceSample");
     this.imagesList = document.getElementById("imagesList");
     this.imagesCount = document.getElementById("imagesCount");
@@ -27,6 +28,9 @@ class AudiobookConverter {
       this.playVoiceSample()
     );
     this.voiceSelect.addEventListener("change", () => this.updateVoiceSample());
+    this.languageSelect.addEventListener("change", () =>
+      this.updateTranslationStep()
+    );
   }
 
   updateVoiceSample() {
@@ -34,6 +38,17 @@ class AudiobookConverter {
     this.voiceSamplePlayer.src =
       "/voices/sample-" + selectedVoice.toLowerCase() + ".mp3";
     console.log(this.voiceSamplePlayer);
+  }
+
+  updateTranslationStep() {
+    const selectedLanguage = this.languageSelect.value;
+    const translateStep = document.getElementById("step-translate");
+
+    if (selectedLanguage && selectedLanguage !== "") {
+      translateStep.style.display = "flex";
+    } else {
+      translateStep.style.display = "none";
+    }
   }
 
   async playVoiceSample() {
@@ -89,6 +104,7 @@ class AudiobookConverter {
 
     const bookTitle = this.bookTitleInput.value.trim();
     const voice = this.voiceSelect.value;
+    const language = this.languageSelect.value;
 
     if (!bookTitle) {
       alert("Please enter a book title");
@@ -106,6 +122,7 @@ class AudiobookConverter {
         body: JSON.stringify({
           bookTitle: bookTitle,
           voice: voice,
+          language: language || null,
         }),
       });
 

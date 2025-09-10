@@ -10,14 +10,17 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/**
+/* ************************************************************
  * Process the cleaned text file and convert to speech
+ * ************************************************************
  */
-export async function processTextToSpeech() {
-  const cleanedTextFile = "./text/complete_cleaned.txt";
-  const bookTitle = process.env.BOOK_TITLE || "audiobook";
-  const sanitizedTitle = bookTitle.toLowerCase().replace(/[^a-z0-9]/g, "_");
-  const audioDir = `./audio/${sanitizedTitle}`;
+export async function processTextToSpeech(voice, bookTitle, language) {
+  const doneDir = process.env.DONE_DIR;
+  const cleanedTextFile = path.join(
+    doneDir,
+    `${bookTitle}${language || ""}.txt`
+  );
+  const audioDir = path.join(doneDir, bookTitle);
 
   try {
     // Ensure audio directory exists

@@ -13,13 +13,42 @@ const AVAILABLE_VOICES = [
   "verse",
 ];
 
+// Top 20 most popular languages for translation
+const AVAILABLE_LANGUAGES = [
+  "spanish",
+  "french",
+  "german",
+  "italian",
+  "portuguese",
+  "russian",
+  "japanese",
+  "korean",
+  "chinese",
+  "arabic",
+  "hindi",
+  "dutch",
+  "swedish",
+  "norwegian",
+  "danish",
+  "polish",
+  "turkish",
+  "greek",
+  "hebrew",
+  "thai",
+];
+
 /**
  * Validate transformation request parameters
  * @param {string} bookTitle - The book title provided by user
  * @param {string} voice - The voice name provided by user
+ * @param {string} language - Optional language for translation
  * @returns {Object} Validation result with success flag and error message if any
  */
-export function validateTransformationRequest(bookTitle, voice) {
+export function validateTransformationRequest(
+  bookTitle,
+  voice,
+  language = null
+) {
   const errors = [];
 
   // Validate book title
@@ -46,9 +75,23 @@ export function validateTransformationRequest(bookTitle, voice) {
     );
   }
 
+  // Validate language (optional)
+  if (language !== null && language !== undefined && language !== "") {
+    if (typeof language !== "string") {
+      errors.push("Language must be a string");
+    } else if (!AVAILABLE_LANGUAGES.includes(language)) {
+      errors.push(
+        `Invalid language "${language}". Available languages: ${AVAILABLE_LANGUAGES.join(
+          ", "
+        )}`
+      );
+    }
+  }
+
   return {
     isValid: errors.length === 0,
     errors: errors,
     availableVoices: AVAILABLE_VOICES,
+    availableLanguages: AVAILABLE_LANGUAGES,
   };
 }
