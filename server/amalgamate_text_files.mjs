@@ -12,7 +12,7 @@ import path from "path";
  * ********************************************************************************
  */
 async function amalgamateFiles() {
-  const textDir = "./text";
+  const textDir = process.env.WORKING_DIR;
   const outputFile = path.join(process.env.WORKING_DIR, "complete.txt");
 
   try {
@@ -31,7 +31,7 @@ async function amalgamateFiles() {
     );
 
     if (textFiles.length === 0) {
-      console.log("📄 No text files found in /text directory");
+      console.log(`📄 No text files found in ${textDir} directory`);
       return;
     }
 

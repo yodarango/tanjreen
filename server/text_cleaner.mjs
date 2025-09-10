@@ -19,7 +19,7 @@ function splitTextIntoChunks(text, maxTokens = 3000) {
   const chunks = [];
 
   // Rough estimation: 1 token ≈ 4 characters (conservative estimate)
-  const maxCharsPerChunk = maxTokens * 3; // Being conservative
+  const maxCharsPerChunk = maxTokens * 2; // Being conservative
 
   let currentChunk = "";
   const sentences = text.split(/(?<=\.)\s+/); // Split on periods followed by whitespace
@@ -120,7 +120,6 @@ async function cleanCompleteText(bookTitle) {
     }
 
     // Get book title from environment
-    const bookTitle = process.env.BOOK_TITLE || "Unknown Book";
     console.log(`📚 Book title: ${bookTitle}`);
 
     // Read the complete text

@@ -7,6 +7,36 @@ import dotenv from "dotenv";
 // Load environment variables
 dotenv.config();
 
+/**
+ * Clean and recreate the working directory to avoid old files from previous runs
+ * @param {string} workingDir - The path to the working directory to clean
+ */
+async function cleanWorkingDirectory(workingDir) {
+  console.log("🧹 Cleaning working directory:", workingDir);
+
+  try {
+    // Remove all files in the working directory
+    if (fs.existsSync(workingDir)) {
+      const files = fs.readdirSync(workingDir);
+      for (const file of files) {
+        const filePath = path.join(workingDir, file);
+        if (fs.statSync(filePath).isFile()) {
+          fs.unlinkSync(filePath);
+          console.log(`🗑️ Removed old file: ${file}`);
+        }
+      }
+    } else {
+      // Create the directory if it doesn't exist
+      fs.mkdirSync(workingDir, { recursive: true });
+      console.log("📁 Created working directory:", workingDir);
+    }
+    console.log("✅ Working directory cleaned successfully");
+  } catch (error) {
+    console.error("❌ Error cleaning working directory:", error.message);
+    throw error;
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -87,14 +117,16 @@ app.post("/api/start-transformation", async (req, res) => {
       error: null,
     };
 
-    // write the book title and voice to temp.json file under the working dir so that the child process can grab them later
+    // Clean the working directory BEFORE starting the process
+    const workingDir = process.env.WORKING_DIR;
+    await cleanWorkingDirectory(workingDir);
 
+    // write the book title and voice to temp.json file under the working dir so that the child process can grab them later
     const tempData = {
       bookTitle,
       voice,
     };
 
-    const workingDir = process.env.WORKING_DIR;
     fs.writeFileSync(
       `${workingDir}/temp.json`,
       JSON.stringify(tempData, null, 2)
