@@ -2,13 +2,22 @@ import { processImagesWithOCR } from "./process_images_with_ocr.mjs";
 import { amalgamateFiles } from "./amalgamate_text_files.mjs";
 import { processTextToSpeech } from "./process_tts.mjs";
 import { cleanCompleteText } from "./text_cleaner.mjs";
+import fs from "fs";
+
+// Load environment variables
+import dotenv from "dotenv";
+dotenv.config();
 
 /**
  * Main function to run the complete pipeline
  */
-async function process(bookTitle, voice) {
-  console.log(bookTitle, voice);
-  return;
+async function process() {
+  // grab the book title and voice from the temp file
+  const tempData = JSON.parse(fs.readFileSync("./temp.json", "utf8"));
+  const bookTitle = tempData.bookTitle;
+  const voice = tempData.voice;
+  console.log(" ---------- ", bookTitle, voice);
+
   console.log(
     "🚀 Starting complete OCR + Text Combination + AI Cleaning + TTS pipeline..."
   );

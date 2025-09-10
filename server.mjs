@@ -18,7 +18,6 @@ app.use(express.static("public"));
 let transformationState = {
   isRunning: false,
   completed: false,
-  outputPath: null,
   messages: [],
   currentStep: 0,
   progress: 0,
@@ -79,7 +78,6 @@ app.post("/api/start-transformation", async (req, res) => {
     // Tell the state we are starting to run
     transformationState = {
       completed: false,
-      outputPath: null,
       isRunning: true,
       messages: [],
       currentStep: 0,
@@ -87,8 +85,21 @@ app.post("/api/start-transformation", async (req, res) => {
       error: null,
     };
 
+    // write the book title and voice to temp.json file under the working dir so that the child process can grab them later
+
+    const tempData = {
+      bookTitle,
+      voice,
+    };
+
+    const workingDir = process.env.WORKING_DIR;
+    fs.writeFileSync(
+      workingDir + "/temp.json",
+      JSON.stringify(tempData, null, 2)
+    );
+
     // Start the transformation process
-    startTransformationProcess(bookTitle, voice);
+    startTransformationProcess();
 
     res.json({ success: true, message: "Transformation started" });
   } catch (error) {
@@ -103,9 +114,9 @@ app.get("/api/progress", (req, res) => {
 });
 
 // This is in charge of running every single part of the process and update the global state
-function startTransformationProcess(bookTitle, voice) {
+function startTransformationProcess() {
   // pass the book title and voice as a func param
-  const child = spawn("node", ["./server/process.web.mjs", bookTitle, voice], {
+  const child = spawn("node", ["./server/process.web.mjs"], {
     stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });
@@ -164,8 +175,6 @@ function startTransformationProcess(bookTitle, voice) {
       transformationState.completed = true;
       transformationState.progress = 100;
       transformationState.currentStep = stepKeywords.length;
-      const sanitizedTitle = bookTitle.toLowerCase().replace(/[^a-z0-9]/g, "_");
-      transformationState.outputPath = `./audio/${sanitizedTitle}/complete.mp3`;
 
       console.log(transformationState);
       transformationState.messages.push({
