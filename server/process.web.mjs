@@ -20,7 +20,6 @@ async function process() {
   console.log("📚 Step 2: Combining text files...");
   await amalgamateFiles();
   console.log("");
-  return;
 
   // Step 3: Clean text with AI
   console.log("🧹 Step 3: Cleaning text with OpenAI...");

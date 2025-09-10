@@ -13,7 +13,7 @@ import path from "path";
  */
 async function amalgamateFiles() {
   const textDir = "./text";
-  const outputFile = process.env.WORKING_DIR;
+  const outputFile = path.join(process.env.WORKING_DIR, "complete.txt");
 
   try {
     // Check if text directory exists
@@ -102,12 +102,6 @@ async function amalgamateFiles() {
     );
     console.log(`📊 Total characters: ${totalCharacters}`);
     console.log(`💾 Output file: ${outputFile}`);
-
-    // Show a preview of the combined content
-    const preview = combinedContent.substring(0, 200);
-    console.log(
-      `📝 Preview: ${preview}${combinedContent.length > 200 ? "..." : ""}`
-    );
   } catch (error) {
     console.error("❌ Fatal error during text combination:", error.message);
   }
