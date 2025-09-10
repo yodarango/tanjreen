@@ -1,5 +1,5 @@
 import { processImagesWithOCR } from "./process_images_with_ocr.mjs";
-import { combineTextFiles } from "./amalgamate_text_files.mjs";
+import { amalgamateFiles } from "./amalgamate_text_files.mjs";
 import { processTextToSpeech } from "./process_tts.mjs";
 import { cleanCompleteText } from "./text_cleaner.mjs";
 
@@ -18,7 +18,7 @@ async function process() {
 
   // Step 2: Combine all text files
   console.log("📚 Step 2: Combining text files...");
-  await combineTextFiles();
+  await amalgamateFiles();
   console.log("");
   return;
 

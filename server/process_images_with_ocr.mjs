@@ -24,13 +24,14 @@ async function convertHeicToJpeg(heicPath, outputPath) {
 }
 
 /* ****************************************************************************
- * Process all images in the /images directory and extract text using OCR
- * Save the results as numbered text files in the /text directory
+ * Process all images in the /images directory and extract text using OCR. It
+ * saves the results as numbered text files in the /text directory. One text
+ * file per image.
  * ****************************************************************************
  */
 async function processImagesWithOCR() {
-  const imagesDir = "./images";
-  const textDir = "./text";
+  const imagesDir = process.env.PENDING_DIR;
+  const textDir = process.env.WORKING_DIR;
 
   try {
     // Ensure directories exist
@@ -99,7 +100,7 @@ async function processImagesWithOCR() {
 
         // Configure Tesseract options
         const config = {
-          lang: "eng", // Language (you can change this to "ita" for Italian)
+          lang: process.env.TEXT_LANG, // Language (you can change this to "ita" for Italian)
           oem: 1, // OCR Engine Mode
           psm: 3, // Page Segmentation Mode
         };
@@ -120,11 +121,6 @@ async function processImagesWithOCR() {
         fs.writeFileSync(outputPath, cleanedText, "utf8");
 
         console.log(`✅ Saved OCR result to: ${outputFileName}`);
-        console.log(
-          `📝 Text preview: ${cleanedText.substring(0, 100)}${
-            cleanedText.length > 100 ? "..." : ""
-          }`
-        );
       } catch (error) {
         console.error(`❌ Error processing ${imageFile}:`, error.message);
 

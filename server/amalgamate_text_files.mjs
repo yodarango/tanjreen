@@ -2,13 +2,18 @@ import fs from "fs";
 import path from "path";
 
 /* ********************************************************************************
- * Combine all text files from /text directory into a single complete.txt file
- * Files are combined in numerical order (1.txt, 2.txt, 3.txt, etc.)
+ * Combine all text files created by the processImagesWithOCR function. It
+ * will grab the files, sort them in numerical order, and combine them
+ * into a single file.
+ *
+ * The output file will be saved to the working directory, which is specified
+ * by the WORKING_DIR environment variable as complete.text
+ *
  * ********************************************************************************
  */
-async function AmalgamateFiles() {
+async function amalgamateFiles() {
   const textDir = "./text";
-  const outputFile = path.join(textDir, "complete.txt");
+  const outputFile = process.env.WORKING_DIR;
 
   try {
     // Check if text directory exists
@@ -109,4 +114,4 @@ async function AmalgamateFiles() {
 }
 
 // Export the function for use in other modules
-export { AmalgamateFiles };
+export { amalgamateFiles };

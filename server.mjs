@@ -30,7 +30,7 @@ let transformationState = {
 // Get list of images in the images directory so we can show them to the user
 app.get("/api/images", (req, res) => {
   try {
-    const imagesDir = process.env.IMAGES_DIR || "./server/content/1.pending";
+    const imagesDir = process.env.PENDING_DIR || "./server/content/1.pending";
 
     if (!fs.existsSync(imagesDir)) {
       return res.json([]);
