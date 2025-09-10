@@ -104,7 +104,8 @@ app.get("/api/progress", (req, res) => {
 
 // This is in charge of running every single part of the process and update the global state
 function startTransformationProcess(bookTitle, voice) {
-  const child = spawn("node", ["./server/process.web.mjs"], {
+  // pass the book title and voice as a func param
+  const child = spawn("node", ["./server/process.web.mjs", bookTitle, voice], {
     stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });

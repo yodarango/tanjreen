@@ -6,7 +6,9 @@ import { cleanCompleteText } from "./text_cleaner.mjs";
 /**
  * Main function to run the complete pipeline
  */
-async function process() {
+async function process(bookTitle, voice) {
+  console.log(bookTitle, voice);
+  return;
   console.log(
     "🚀 Starting complete OCR + Text Combination + AI Cleaning + TTS pipeline..."
   );
@@ -23,12 +25,13 @@ async function process() {
 
   // Step 3: Clean text with AI
   console.log("🧹 Step 3: Cleaning text with OpenAI...");
-  await cleanCompleteText();
+  await cleanCompleteText(bookTitle);
   console.log("");
+  return;
 
   // Step 4: Convert text to speech
   console.log("🎤 Step 4: Converting text to speech...");
-  await processTextToSpeech();
+  await processTextToSpeech(voice);
   console.log("");
 
   console.log("🎊 Complete pipeline finished!");
