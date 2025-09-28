@@ -3,6 +3,13 @@ import { amalgamateFiles } from "./amalgamate_text_files.mjs";
 import { processTextToSpeech } from "./process_tts.mjs";
 import { cleanCompleteText } from "./text_cleaner.mjs";
 import { translate } from "./translate.mjs";
+import {
+  logOne,
+  callTwo,
+  callThree,
+  callFour,
+  callFive,
+} from "./log_steps.mjs";
 import fs from "fs";
 
 // Load environment variables
@@ -22,36 +29,22 @@ async function startProcess() {
   const voice = tempData.voice;
   const language = tempData.language;
 
-  console.log(
-    "🚀 Starting complete OCR + Text Combination + AI Cleaning + TTS pipeline..."
-  );
-
   // Step 1: Process images with OCR
-  console.log("📖 Step 1: Processing images with OCR...");
-  await processImagesWithOCR();
-  console.log("");
+  await logOne(processImagesWithOCR);
 
   // Step 2: Combine all text files
-  console.log("📚 Step 2: Combining text files...");
-  await amalgamateFiles();
-  console.log("");
+  await callTwo(amalgamateFiles);
 
   // Step 3: Clean text with AI
-  console.log("🧹 Step 3: Cleaning text with OpenAI...");
-  await cleanCompleteText(bookTitle);
-  console.log("");
+  await callThree(cleanCompleteText, bookTitle);
 
-  // Step 4: Translate text if language is specified
+  // Step 4 (optional): Translate text if language is specified
   if (language && language !== null && language !== "") {
-    console.log(`🌍 Step 4: Translating text to ${language}...`);
-    await translate(bookTitle, language);
-    console.log("");
+    await callFour(translate, bookTitle, language);
   }
 
-  // Step 4: Convert text to speech
-  console.log("🎤 Step 4: Converting text to speech...");
-  await processTextToSpeech(voice, bookTitle, language);
-  console.log("");
+  // Step 5: Convert text to speech
+  await callFive(processTextToSpeech, voice, bookTitle, language);
 
   console.log("🎊 Complete pipeline finished!");
 }

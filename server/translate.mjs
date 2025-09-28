@@ -10,25 +10,77 @@ const openai = new OpenAI({
  * transalte the text into the given language through openAI
  * ************************************************************
  */
+
+/* **********************************************************************
+ * Split text into chunks that don't exceed ~3000 tokens. We approximate
+ * tokens conservatively with characters and split on sentence boundaries.
+ * **********************************************************************
+ */
+function splitTextIntoChunks(text, maxTokens = 3000) {
+  const chunks = [];
+
+  // Rough estimation: 1 token ≈ 4 characters; be extra conservative
+  const maxCharsPerChunk = maxTokens * 2; // ≈ 6000 chars per chunk
+
+  let currentChunk = "";
+  const sentences = text.split(/(?<=\.)\s+/);
+
+  for (const sentence of sentences) {
+    if (
+      currentChunk.length + sentence.length > maxCharsPerChunk &&
+      currentChunk.length > 0
+    ) {
+      chunks.push(currentChunk.trim());
+      currentChunk = sentence;
+    } else {
+      currentChunk += (currentChunk.length > 0 ? " " : "") + sentence;
+    }
+  }
+
+  if (currentChunk.trim().length > 0) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+}
+
 async function translateText(text, language) {
   try {
-    const prompt = `Translate the following text as accurately as possible to ${language}. Make sure that the translation is done in day to day ${language} not written style ${language} therefore, translate accurately but also in a way that is relevant today:
+    const chunks = splitTextIntoChunks(text, 3000);
+    console.log(`✂️ Split text into ${chunks.length} chunk(s) for translation`);
 
-${text}`;
+    const translations = [];
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      max_tokens: 4000,
-      temperature: 0.3,
-    });
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const prompt = `Translate the following text as accurately as possible to ${language}. Make sure that the translation is done in day to day ${language} not written style ${language} therefore, translate accurately but also in a way that is relevant today:\n\n${chunk}`;
 
-    return response.choices[0].message.content.trim();
+      console.log(
+        `🔤 Translating chunk ${i + 1}/${chunks.length} (${chunk.length} chars)`
+      );
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: 4000,
+        temperature: 0.3,
+      });
+
+      const translatedChunk = response.choices[0].message.content.trim();
+      translations.push(translatedChunk);
+
+      // Small delay to reduce rate limiting risk
+      if (i < chunks.length - 1) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
+
+    return translations.join("\n\n");
   } catch (error) {
     console.error("❌ Error translating text:", error.message);
     throw error;

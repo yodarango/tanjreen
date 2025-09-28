@@ -15,12 +15,21 @@ const openai = new OpenAI({
  * ************************************************************
  */
 export async function processTextToSpeech(voice, bookTitle, language) {
+  const workingDir = process.env.WORKING_DIR;
   const doneDir = process.env.DONE_DIR;
-  const cleanedTextFile = path.join(
+  const sanitizedTitle = bookTitle
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  let cleanedTextFile = path.join(
     doneDir,
-    `${bookTitle}${language || ""}.txt`
+    language && language !== ""
+      ? `${sanitizedTitle}_${language}.txt`
+      : `${sanitizedTitle}.txt`
   );
-  const audioDir = path.join(doneDir, bookTitle);
+
+  // Output MP3 chunks under WORKING_DIR/<sanitized_bookTitle>
+  const audioDir = path.join(workingDir, sanitizedTitle);
 
   try {
     // Ensure audio directory exists
@@ -29,18 +38,27 @@ export async function processTextToSpeech(voice, bookTitle, language) {
       console.log(`📁 Created audio directory: ${audioDir}`);
     }
 
+    // Resolve cleaned text file (fallback to non-translated if needed)
+    if (!fs.existsSync(cleanedTextFile) && language) {
+      const fallback = path.join(doneDir, `${sanitizedTitle}.txt`);
+      if (fs.existsSync(fallback)) {
+        console.log(
+          `ℹ️ Translation file missing, falling back to: ${fallback}`
+        );
+        cleanedTextFile = fallback;
+      }
+    }
+
     // Check if cleaned text file exists
     if (!fs.existsSync(cleanedTextFile)) {
       console.log(
-        "❌ complete_cleaned.txt not found. Make sure to run the cleaning step first."
+        `❌ Cleaned text file not found: ${cleanedTextFile}. Make sure to run the cleaning step first.`
       );
       return;
     }
 
     console.log(
-      `🎤 Converting cleaned text to speech using voice: ${
-        process.env.VOICE || "echo"
-      }`
+      `🎤 Converting cleaned text to speech using voice: ${voice || "echo"}`
     );
 
     // Read the cleaned text file
@@ -70,7 +88,7 @@ export async function processTextToSpeech(voice, bookTitle, language) {
     // Process each chunk
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
-      const chunkAudioFileName = `file_${chunkIndex}.mp3`;
+      const chunkAudioFileName = `${chunkIndex + 1}.mp3`;
       const chunkAudioPath = path.join(audioDir, chunkAudioFileName);
 
       console.log(
@@ -82,7 +100,7 @@ export async function processTextToSpeech(voice, bookTitle, language) {
       try {
         const mp3 = await openai.audio.speech.create({
           model: "tts-1",
-          voice: process.env.VOICE || "echo",
+          voice: voice || "echo",
           input: chunk,
         });
 
