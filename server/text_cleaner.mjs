@@ -69,9 +69,9 @@ ${textChunk}`;
 
   try {
     console.log(
-      `🧹 Cleaning chunk ${chunkIndex + 1}/${totalChunks} (${
+      `   - Cleaning chunk ${chunkIndex + 1}/${totalChunks} with ${
         textChunk.length
-      } characters)`
+      } characters`
     );
 
     const response = await openai.chat.completions.create({
@@ -86,12 +86,12 @@ ${textChunk}`;
 
     const cleanedText = response.choices[0].message.content.trim();
     console.log(
-      `✅ Chunk ${chunkIndex + 1} cleaned (${cleanedText.length} characters)`
+      `   ✔ Chunk ${chunkIndex + 1} cleaned (${cleanedText.length} characters)`
     );
 
     return cleanedText;
   } catch (error) {
-    console.error(`❌ Error cleaning chunk ${chunkIndex + 1}:`, error.message);
+    console.error(` ❌ Error cleaning chunk ${chunkIndex + 1}:`, error.message);
 
     // Return original text if cleaning fails
     return textChunk;
@@ -112,29 +112,28 @@ async function cleanCompleteText(bookTitle) {
   try {
     // Check if complete.txt exists
     if (!fs.existsSync(inputFile)) {
-      console.error("❌ complete.txt file not found in /text directory");
-      console.log(
-        "💡 Run 'npm run combine' first to create the complete.txt file"
+      console.error(
+        " ❌ complete.txt file not found in /text directory. Run 'npm run combine' first to create the complete.txt file"
       );
       return;
     }
 
     // Get book title from environment
-    console.log(`📚 Book title: ${bookTitle}`);
+    console.log(` - Book title: ${bookTitle}`);
 
     // Read the complete text
     const completeText = fs.readFileSync(inputFile, "utf8");
-    console.log(`📄 Read complete.txt: ${completeText.length} characters`);
+    console.log(` - Read complete.txt: ${completeText.length} characters`);
 
     if (completeText.trim().length === 0) {
-      console.log("⚠️ complete.txt is empty");
+      console.log(" ❌ complete.txt is empty");
       return;
     }
 
     // Split text into chunks
-    console.log("✂️ Splitting text into chunks...");
+    console.log(" - Splitting text into chunks...");
     const chunks = splitTextIntoChunks(completeText);
-    console.log(`📦 Created ${chunks.length} chunks for processing`);
+    console.log(` - Created ${chunks.length} chunks for processing`);
 
     // Clean each chunk
     const cleanedChunks = [];
@@ -149,7 +148,7 @@ async function cleanCompleteText(bookTitle) {
 
       // Add a small delay to avoid rate limiting
       if (i < chunks.length - 1) {
-        console.log("⏳ Waiting 1 second to avoid rate limiting...");
+        console.log(" - Waiting 1 second to avoid rate limiting...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
@@ -160,15 +159,11 @@ async function cleanCompleteText(bookTitle) {
     // Write cleaned text to file
     fs.writeFileSync(outputFile, finalCleanedText, "utf8");
 
-    console.log(`🎉 Text cleaning completed!`);
-    console.log(`📊 Original: ${completeText.length} characters`);
-    console.log(`📊 Cleaned: ${finalCleanedText.length} characters`);
-    console.log(`💾 Output file: ${outputFile}`);
-
-    // Show a preview of the cleaned text
-    const preview = finalCleanedText.substring(0, 300);
+    console.log(` - Original: ${completeText.length} characters`);
+    console.log(` - Cleaned: ${finalCleanedText.length} characters`);
+    console.log(` - Output file: ${outputFile}`);
   } catch (error) {
-    console.error("❌ Fatal error during text cleaning:", error.message);
+    console.error(" ❌ Fatal error during text cleaning:", error.message);
   }
 }
 

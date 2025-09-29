@@ -1,15 +1,9 @@
+import { logOne, logTwo, logThree, logFour, logFive } from "./log_steps.mjs";
 import { processImagesWithOCR } from "./process_images_with_ocr.mjs";
 import { amalgamateFiles } from "./amalgamate_text_files.mjs";
 import { processTextToSpeech } from "./process_tts.mjs";
 import { cleanCompleteText } from "./text_cleaner.mjs";
 import { translate } from "./translate.mjs";
-import {
-  logOne,
-  callTwo,
-  callThree,
-  callFour,
-  callFive,
-} from "./log_steps.mjs";
 import fs from "fs";
 
 // Load environment variables
@@ -33,20 +27,21 @@ async function startProcess() {
   await logOne(processImagesWithOCR);
 
   // Step 2: Combine all text files
-  await callTwo(amalgamateFiles);
+  await logTwo(amalgamateFiles);
 
   // Step 3: Clean text with AI
-  await callThree(cleanCompleteText, bookTitle);
+  await logThree(cleanCompleteText, bookTitle);
 
   // Step 4 (optional): Translate text if language is specified
   if (language && language !== null && language !== "") {
-    await callFour(translate, bookTitle, language);
+    await logFour(translate, bookTitle, language);
   }
 
   // Step 5: Convert text to speech
-  await callFive(processTextToSpeech, voice, bookTitle, language);
+  await logFive(processTextToSpeech, voice, bookTitle, language);
 
-  console.log("🎊 Complete pipeline finished!");
+  // Step 6: Concatenate audio files
+  await logSix();
 }
 
 // Run the main function

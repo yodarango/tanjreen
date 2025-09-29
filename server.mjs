@@ -160,32 +160,32 @@ app.get("/api/progress", (req, res) => {
 });
 
 // Get available voices
-app.get("/api/voices", (req, res) => {
-  try {
-    const validation = validateTransformationRequest("dummy", "dummy");
-    res.json({
-      voices: validation.availableVoices,
-      count: validation.availableVoices.length,
-    });
-  } catch (error) {
-    console.error("Error getting voices:", error);
-    res.status(500).json({ error: "Failed to get available voices" });
-  }
-});
+// app.get("/api/voices", (req, res) => {
+//   try {
+//     const validation = validateTransformationRequest("dummy", "dummy");
+//     res.json({
+//       voices: validation.availableVoices,
+//       count: validation.availableVoices.length,
+//     });
+//   } catch (error) {
+//     console.error("Error getting voices:", error);
+//     res.status(500).json({ error: "Failed to get available voices" });
+//   }
+// });
 
 // Get available languages
-app.get("/api/languages", (req, res) => {
-  try {
-    const validation = validateTransformationRequest("dummy", "dummy");
-    res.json({
-      languages: validation.availableLanguages,
-      count: validation.availableLanguages.length,
-    });
-  } catch (error) {
-    console.error("Error getting languages:", error);
-    res.status(500).json({ error: "Failed to get available languages" });
-  }
-});
+// app.get("/api/languages", (req, res) => {
+//   try {
+//     const validation = validateTransformationRequest("dummy", "dummy");
+//     res.json({
+//       languages: validation.availableLanguages,
+//       count: validation.availableLanguages.length,
+//     });
+//   } catch (error) {
+//     console.error("Error getting languages:", error);
+//     res.status(500).json({ error: "Failed to get available languages" });
+//   }
+// });
 
 // This is in charge of running every single part of the process and update the global state
 function startTransformationProcess() {

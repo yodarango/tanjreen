@@ -47,7 +47,7 @@ function splitTextIntoChunks(text, maxTokens = 3000) {
 async function translateText(text, language) {
   try {
     const chunks = splitTextIntoChunks(text, 3000);
-    console.log(`✂️ Split text into ${chunks.length} chunk(s) for translation`);
+    console.log(` - Split text into ${chunks.length} chunk(s) for translation`);
 
     const translations = [];
 
@@ -56,7 +56,9 @@ async function translateText(text, language) {
       const prompt = `Translate the following text as accurately as possible to ${language}. Make sure that the translation is done in day to day ${language} not written style ${language} therefore, translate accurately but also in a way that is relevant today:\n\n${chunk}`;
 
       console.log(
-        `🔤 Translating chunk ${i + 1}/${chunks.length} (${chunk.length} chars)`
+        `   - Translating chunk ${i + 1}/${chunks.length} (${
+          chunk.length
+        } chars)`
       );
 
       const response = await openai.chat.completions.create({
@@ -82,7 +84,7 @@ async function translateText(text, language) {
 
     return translations.join("\n\n");
   } catch (error) {
-    console.error("❌ Error translating text:", error.message);
+    console.error(" ❌ Error translating text:", error.message);
     throw error;
   }
 }
@@ -92,7 +94,7 @@ async function translateText(text, language) {
  * ************************************************************
  */
 export async function translate(bookTitle, language) {
-  console.log(`🌍 Starting translation to ${language}...`);
+  console.log(` - Starting translation to ${language}...`);
 
   try {
     // Read the complete text file
@@ -100,17 +102,17 @@ export async function translate(bookTitle, language) {
     const completeTextPath = path.join(workingDir, "complete.txt");
 
     if (!fs.existsSync(completeTextPath)) {
-      throw new Error("complete.txt file not found");
+      throw new Error(" ❌ complete.txt file not found");
     }
 
     const originalText = fs.readFileSync(completeTextPath, "utf8");
-    console.log(`📖 Read ${originalText.length} characters from complete.txt`);
+    console.log(` - Read ${originalText.length} characters from complete.txt`);
 
     // Translate the text
-    console.log(`🔄 Translating to ${language}...`);
+    console.log(` - Translating to ${language}...`);
     const translatedText = await translateText(originalText, language);
     console.log(
-      `✅ Translation completed: ${translatedText.length} characters`
+      ` ✔ Translation completed: ${translatedText.length} characters`
     );
 
     // Save the translated text
@@ -129,11 +131,11 @@ export async function translate(bookTitle, language) {
     }
 
     fs.writeFileSync(outputPath, translatedText, "utf8");
-    console.log(`💾 Translated text saved to: ${outputPath}`);
+    console.log(` ✔ Translated text saved to: ${outputPath}`);
 
     return outputPath;
   } catch (error) {
-    console.error("❌ Error during translation:", error.message);
+    console.error(" ❌ Error during translation:", error.message);
     throw error;
   }
 }

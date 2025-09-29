@@ -19,7 +19,7 @@ async function convertHeicToJpeg(heicPath, outputPath) {
     fs.writeFileSync(outputPath, outputBuffer);
     return outputPath;
   } catch (error) {
-    throw new Error(`Failed to convert HEIC file: ${error.message}`);
+    throw new Error(` ❌ Failed to convert HEIC file: ${error.message}`);
   }
 }
 
@@ -36,13 +36,13 @@ async function processImagesWithOCR() {
   try {
     // Ensure directories exist
     if (!fs.existsSync(imagesDir)) {
-      console.error("❌ Images directory does not exist");
+      console.error(" ❌ Images directory does not exist");
       return;
     }
 
     if (!fs.existsSync(textDir)) {
       fs.mkdirSync(textDir, { recursive: true });
-      console.log("📁 Created text directory");
+      console.log(" - Created text directory");
     }
 
     // Read all files from images directory
@@ -65,11 +65,11 @@ async function processImagesWithOCR() {
     });
 
     if (imageFiles.length === 0) {
-      console.log("📷 No image files found in /images directory");
+      console.log(" ❌ No image files found in /images directory");
       return;
     }
 
-    console.log(`🔍 Found ${imageFiles.length} image files to process`);
+    console.log(` - Found ${imageFiles.length} image files to process`);
 
     // Sort files to ensure consistent ordering
     imageFiles.sort();
@@ -82,7 +82,7 @@ async function processImagesWithOCR() {
       const outputPath = path.join(textDir, outputFileName);
 
       console.log(
-        `📖 Processing image ${i + 1}/${imageFiles.length}: ${imageFile}`
+        `   - Processing image ${i + 1}/${imageFiles.length}: ${imageFile}`
       );
 
       try {
@@ -92,15 +92,15 @@ async function processImagesWithOCR() {
         // Check if file is HEIC/HEIF and convert to JPEG
         const ext = path.extname(imageFile).toLowerCase();
         if (ext === ".heic" || ext === ".heif") {
-          console.log(`🔄 Converting HEIC file to JPEG: ${imageFile}`);
+          console.log(`   - Converting HEIC file to JPEG: ${imageFile}`);
           tempJpegPath = path.join(imagesDir, `temp_${i + 1}.jpg`);
           processPath = await convertHeicToJpeg(imagePath, tempJpegPath);
-          console.log(`✅ HEIC conversion completed`);
+          console.log(` ✔ HEIC conversion completed`);
         }
 
         // Configure Tesseract options
         const config = {
-          lang: process.env.TEXT_LANG, // Language (you can change this to "ita" for Italian)
+          lang: process.env.TEXT_LANG,
           oem: 1, // OCR Engine Mode
           psm: 3, // Page Segmentation Mode
         };
@@ -120,25 +120,21 @@ async function processImagesWithOCR() {
         // Save to text file
         fs.writeFileSync(outputPath, cleanedText, "utf8");
 
-        console.log(`✅ Saved OCR result to: ${outputFileName}`);
+        console.log(` ✔ Saved OCR result to: ${outputFileName}`);
       } catch (error) {
-        console.error(`❌ Error processing ${imageFile}:`, error.message);
+        console.error(` ❌ Error processing ${imageFile}:`, error.message);
 
         // Clean up temporary JPEG file if it was created
         if (tempJpegPath && fs.existsSync(tempJpegPath)) {
           fs.unlinkSync(tempJpegPath);
-          console.log(`🗑️ Cleaned up temporary file after error`);
+          console.log(` Cleaned up temporary file after error`);
         }
 
         // Create an error file to maintain sequence
-        const errorMessage = `Error processing image: ${error.message}`;
+        const errorMessage = `  ❌ Error processing image: ${error.message}`;
         fs.writeFileSync(outputPath, errorMessage, "utf8");
       }
     }
-
-    console.log(
-      `🎉 OCR processing completed! Processed ${imageFiles.length} images.`
-    );
   } catch (error) {
     console.error("❌ Fatal error during OCR processing:", error.message);
   }

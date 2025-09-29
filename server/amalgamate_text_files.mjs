@@ -18,7 +18,7 @@ async function amalgamateFiles() {
   try {
     // Check if text directory exists
     if (!fs.existsSync(textDir)) {
-      console.error("❌ Text directory does not exist");
+      console.error(" ❌ Text directory does not exist");
       return;
     }
 
@@ -31,7 +31,7 @@ async function amalgamateFiles() {
     );
 
     if (textFiles.length === 0) {
-      console.log(`📄 No text files found in ${textDir} directory`);
+      console.log(` ❌ No text files found in ${textDir} directory`);
       return;
     }
 
@@ -42,8 +42,8 @@ async function amalgamateFiles() {
       return numA - numB;
     });
 
-    console.log(`📚 Found ${textFiles.length} text files to combine`);
-    console.log(`📋 Files order: ${textFiles.join(", ")}`);
+    console.log(` - Found ${textFiles.length} text files to combine`);
+    console.log(` - Files order: ${textFiles.join(", ")}`);
 
     let combinedContent = "";
     let totalCharacters = 0;
@@ -53,14 +53,16 @@ async function amalgamateFiles() {
       const textFile = textFiles[i];
       const filePath = path.join(textDir, textFile);
 
-      console.log(`📖 Reading file ${i + 1}/${textFiles.length}: ${textFile}`);
+      console.log(
+        `   - Reading file ${i + 1}/${textFiles.length}: ${textFile}`
+      );
 
       try {
         const content = fs.readFileSync(filePath, "utf8");
         const trimmedContent = content.trim();
 
         if (trimmedContent.length === 0) {
-          console.log(`⚠️ Skipping empty file: ${textFile}`);
+          console.log(` ⚠ Skipping empty file: ${textFile}`);
           continue;
         }
 
@@ -74,10 +76,10 @@ async function amalgamateFiles() {
         totalCharacters += trimmedContent.length;
 
         console.log(
-          `✅ Added ${trimmedContent.length} characters from ${textFile}`
+          `   - Added ${trimmedContent.length} characters from ${textFile}`
         );
       } catch (error) {
-        console.error(`❌ Error reading ${textFile}:`, error.message);
+        console.error(` ❌ Error reading ${textFile}:`, error.message);
 
         // Add error note to combined content
         if (combinedContent.length > 0) {
@@ -89,7 +91,7 @@ async function amalgamateFiles() {
 
     if (combinedContent.length === 0) {
       console.log(
-        "⚠️ No content to combine - all files were empty or had errors"
+        " ❌ No content to combine - all files were empty or had errors"
       );
       return;
     }
@@ -97,13 +99,10 @@ async function amalgamateFiles() {
     // Write the combined content to complete.txt
     fs.writeFileSync(outputFile, combinedContent, "utf8");
 
-    console.log(
-      `🎉 Successfully combined ${textFiles.length} files into complete.txt`
-    );
-    console.log(`📊 Total characters: ${totalCharacters}`);
-    console.log(`💾 Output file: ${outputFile}`);
+    console.log(` - Total characters: ${totalCharacters}`);
+    console.log(` - Output file: ${outputFile}`);
   } catch (error) {
-    console.error("❌ Fatal error during text combination:", error.message);
+    console.error(" ❌ Fatal error during text combination:", error.message);
   }
 }
 

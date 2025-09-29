@@ -2,79 +2,75 @@
 
 export async function logOne(step) {
   try {
-    console.log("📖 Step 1: Processing images with OCR...");
+    console.log(
+      "*****************************************************************************\n" +
+        "🚀 Step 1: Starting complete OCR + Text Combination + AI Cleaning + TTS pipeline... \n" +
+        "*****************************************************************************\n"
+    );
     await step();
     console.log(
-      `*****************************************************************************
-    🚀 Starting complete OCR + Text Combination + AI Cleaning + TTS pipeline...
-     *****************************************************************************
-     \n\n
-     `
+      ` ✅ Step 1: OCR processing completed! Processed ${imageFiles.length} images. \n\n\n`
     );
   } catch (error) {
     return error;
   }
 }
 
-export async function callTwo(step) {
+export async function logTwo(step) {
   try {
-    console.log("📚 Step 2: Combining text files...");
-    await step();
     console.log(
-      `*****************************************************************************
-    📚 Step 2: Combining text files...
-     *****************************************************************************
-     \n\n
-     `
+      "*****************************************************************************\n" +
+        "📚 Step 2: Combining text files...\n" +
+        "*****************************************************************************\n\n"
     );
+
+    await step();
+    console.log(` ✅ Step 2: Done combining text files. \n\n\n`);
   } catch (error) {
     return error;
   }
 }
 
-export async function callThree(step, bookTitle) {
+export async function logThree(step, bookTitle) {
   try {
-    console.log("🧹 Step 3: Cleaning text with OpenAI...");
+    console.log(
+      "*****************************************************************************\n" +
+        "🧹 Step 3: Cleaning text with OpenAI...\n" +
+        "*****************************************************************************\n\n"
+    );
     await step(bookTitle);
-    console.log(
-      `*****************************************************************************
-    🧹 Step 3: Cleaning text with OpenAI...
-     *****************************************************************************
-     \n\n
-     `
-    );
+
+    console.log(` ✅ Step 3: Done cleaning text with OpenAI. \n\n\n`);
   } catch (error) {
     return error;
   }
 }
 
-export async function callFour(step, bookTitle, language) {
+export async function logFour(step, bookTitle, language) {
   try {
-    console.log(`🌍 Step 4: Translating text to ${language}...`);
+    console.log(
+      "*****************************************************************************\n" +
+        `🌍 Step 4: Translating text to ${language}...\n` +
+        "*****************************************************************************\n\n"
+    );
     await step(bookTitle, language);
-    console.log(
-      `*****************************************************************************
-    🌍 Step 4: Translating text to ${language}...
-     *****************************************************************************
-     \n\n
-     `
-    );
+
+    console.log(` ✅ Step 4: Done translating text to ${language}. \n\n\n`);
   } catch (error) {
     return error;
   }
 }
 
-export async function callFive(step, voice, bookTitle, language) {
+export async function logFive(step, voice, bookTitle, language) {
   try {
-    console.log("🎤 Step 5: Converting text to speech...");
-    await step(voice, bookTitle, language);
     console.log(
-      `*****************************************************************************
-    🎤 Step 5: Converting text to speech...
-     *****************************************************************************
-     \n\n
-     `
+      "***************************************************************************** \n" +
+        "🎤 Step 5: Converting text to speech...\n" +
+        "*****************************************************************************\n\n"
     );
+    await step(voice, bookTitle, language);
+
+    console.log(` ✅ Step 5: Done converting text to speech. \n\n\n`);
   } catch (error) {
     return error;
   }

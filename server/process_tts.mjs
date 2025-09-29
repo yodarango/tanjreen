@@ -35,7 +35,7 @@ export async function processTextToSpeech(voice, bookTitle, language) {
     // Ensure audio directory exists
     if (!fs.existsSync(audioDir)) {
       fs.mkdirSync(audioDir, { recursive: true });
-      console.log(`📁 Created audio directory: ${audioDir}`);
+      console.log(` - Created audio directory: ${audioDir}`);
     }
 
     // Resolve cleaned text file (fallback to non-translated if needed)
@@ -43,7 +43,7 @@ export async function processTextToSpeech(voice, bookTitle, language) {
       const fallback = path.join(doneDir, `${sanitizedTitle}.txt`);
       if (fs.existsSync(fallback)) {
         console.log(
-          `ℹ️ Translation file missing, falling back to: ${fallback}`
+          ` - Translation file missing, falling back to: ${fallback}`
         );
         cleanedTextFile = fallback;
       }
@@ -52,24 +52,24 @@ export async function processTextToSpeech(voice, bookTitle, language) {
     // Check if cleaned text file exists
     if (!fs.existsSync(cleanedTextFile)) {
       console.log(
-        `❌ Cleaned text file not found: ${cleanedTextFile}. Make sure to run the cleaning step first.`
+        ` ❌ Cleaned text file not found: ${cleanedTextFile}. Make sure to run the cleaning step first.`
       );
       return;
     }
 
     console.log(
-      `🎤 Converting cleaned text to speech using voice: ${voice || "echo"}`
+      ` - Converting cleaned text to speech using voice: ${voice || "echo"}`
     );
 
     // Read the cleaned text file
     const text = fs.readFileSync(cleanedTextFile, "utf8");
 
     if (text.trim().length === 0) {
-      console.log("⚠️ Cleaned text file is empty");
+      console.log(" ❌ Cleaned text file is empty");
       return;
     }
 
-    console.log(`📄 Processing cleaned text (${text.length} characters)`);
+    console.log(` - Processing cleaned text (${text.length} characters)`);
 
     // Split text into chunks if it's too long (OpenAI has a limit)
     const maxLength = 4000;
@@ -83,7 +83,7 @@ export async function processTextToSpeech(voice, bookTitle, language) {
       }
     }
 
-    console.log(`📦 Split into ${chunks.length} chunks for TTS processing`);
+    console.log(` - Split into ${chunks.length} chunks for TTS processing`);
 
     // Process each chunk
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
@@ -92,7 +92,7 @@ export async function processTextToSpeech(voice, bookTitle, language) {
       const chunkAudioPath = path.join(audioDir, chunkAudioFileName);
 
       console.log(
-        `🎵 Creating audio for chunk ${chunkIndex + 1}/${
+        `   - Creating audio for chunk ${chunkIndex + 1}/${
           chunks.length
         }: ${chunkAudioFileName}`
       );
@@ -107,19 +107,17 @@ export async function processTextToSpeech(voice, bookTitle, language) {
         const buffer = Buffer.from(await mp3.arrayBuffer());
         await fs.promises.writeFile(chunkAudioPath, buffer);
 
-        console.log(`✅ Saved audio: ${chunkAudioFileName}`);
+        console.log(`   ✔ Saved audio: ${chunkAudioFileName}`);
       } catch (error) {
         console.error(
-          `❌ Error processing chunk ${chunkIndex + 1}:`,
+          ` ❌ Error processing chunk ${chunkIndex + 1}:`,
           error.message
         );
       }
     }
-
-    console.log(`🎉 Text-to-speech processing completed!`);
   } catch (error) {
     console.error(
-      "❌ Fatal error during text-to-speech processing:",
+      " ❌ Fatal error during text-to-speech processing:",
       error.message
     );
   }
