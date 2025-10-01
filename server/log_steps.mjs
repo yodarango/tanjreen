@@ -75,3 +75,17 @@ export async function logFive(step, voice, bookTitle, language) {
     return error;
   }
 }
+
+export async function logSix(step, bookTitle) {
+  try {
+    console.log(
+      "*****************************************************************************\n" +
+        "🎵 Step 6: Concatenating audio files...\n" +
+        "*****************************************************************************\n\n"
+    );
+    await step(bookTitle);
+    console.log(` ✅ Step 6: Audio concatenation completed! \n\n\n`);
+  } catch (error) {
+    return error;
+  }
+}

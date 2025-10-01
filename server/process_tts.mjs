@@ -15,7 +15,7 @@ const openai = new OpenAI({
  * ************************************************************
  */
 export async function processTextToSpeech(voice, bookTitle, language) {
-  const workingDir = process.env.WORKING_DIR;
+  const workingDir = process.env.WORKING_DIR + "/audio";
   const doneDir = process.env.DONE_DIR;
   const sanitizedTitle = bookTitle
     .replace(/[^a-zA-Z0-9]+/g, "_")

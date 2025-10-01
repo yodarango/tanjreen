@@ -1,7 +1,23 @@
 #!/bin/zsh
 
+# Check if filename argument is provided
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <filename>"
+    echo "Example: $0 my_title"
+    exit 1
+fi
+
+# Get the filename from the first argument
+filename="$1"
+
 # Set the directory containing the MP3 files
-directory="./audio/daniel_in_babylon"
+directory="./server/content/2.working/audio/$filename"
+
+# Check if directory exists
+if [ ! -d "$directory" ]; then
+    echo "Error: Directory $directory does not exist"
+    exit 1
+fi
 
 # Initialize an empty string to store the file list
 files=""

@@ -115,7 +115,7 @@ async function processImagesWithOCR() {
         // Clean up temporary JPEG file if it was created
         if (tempJpegPath && fs.existsSync(tempJpegPath)) {
           fs.unlinkSync(tempJpegPath);
-          console.log(`🗑️ Cleaned up temporary file`);
+          console.log(` ✔ Cleaned up temporary file`);
         }
 
         // Clean up the text (remove extra whitespace)
@@ -136,7 +136,7 @@ async function processImagesWithOCR() {
         // Clean up temporary JPEG file if it was created
         if (tempJpegPath && fs.existsSync(tempJpegPath)) {
           fs.unlinkSync(tempJpegPath);
-          console.log(`🗑️ Cleaned up temporary file after error`);
+          console.log(` ✔ Cleaned up temporary file after error`);
         }
 
         // Create an error file to maintain sequence
@@ -146,7 +146,7 @@ async function processImagesWithOCR() {
     }
 
     console.log(
-      `🎉 OCR processing completed! Processed ${imageFiles.length} images.`
+      ` ✔ OCR processing completed! Processed ${imageFiles.length} images.`
     );
   } catch (error) {
     console.error("❌ Fatal error during OCR processing:", error.message);

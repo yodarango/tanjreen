@@ -111,7 +111,7 @@ async function processImagesWithOCR() {
         // Clean up temporary JPEG file if it was created
         if (tempJpegPath && fs.existsSync(tempJpegPath)) {
           fs.unlinkSync(tempJpegPath);
-          console.log(`🗑️ Cleaned up temporary file`);
+          console.log(` ✔ Cleaned up temporary file`);
         }
 
         // Clean up the text (remove extra whitespace)

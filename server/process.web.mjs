@@ -1,5 +1,13 @@
-import { logOne, logTwo, logThree, logFour, logFive } from "./log_steps.mjs";
+import {
+  logOne,
+  logTwo,
+  logThree,
+  logFour,
+  logFive,
+  logSix,
+} from "./log_steps.mjs";
 import { processImagesWithOCR } from "./process_images_with_ocr.mjs";
+import { concatenateAudioFiles } from "./concatenate_audio.mjs";
 import { amalgamateFiles } from "./amalgamate_text_files.mjs";
 import { processTextToSpeech } from "./process_tts.mjs";
 import { cleanCompleteText } from "./text_cleaner.mjs";
@@ -41,7 +49,7 @@ async function startProcess() {
   await logFive(processTextToSpeech, voice, bookTitle, language);
 
   // Step 6: Concatenate audio files
-  await logSix();
+  await logSix(concatenateAudioFiles, bookTitle);
 }
 
 // Run the main function
