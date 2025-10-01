@@ -1,9 +1,9 @@
-import express from "express";
-import fs from "fs";
-import path from "path";
+import { validateTransformationRequest } from "./src/utils/validate.mjs";
 import { spawn } from "child_process";
-import { validateTransformationRequest } from "./server/validate.mjs";
+import express from "express";
 import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
 
 // Load environment variables
 dotenv.config();

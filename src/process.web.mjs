@@ -1,18 +1,18 @@
+import { processImagesWithOCR } from "./1.process_images_with_ocr.mjs";
+import { concatenateAudioFiles } from "./6.concatenate_audio.mjs";
+import { amalgamateFiles } from "./2.amalgamate_text_files.mjs";
+import { processTextToSpeech } from "./5.process_tts.mjs";
+import { cleanCompleteText } from "./3.sanitize_text.mjs";
+import { translate } from "./4.translate.mjs";
+import fs from "fs";
 import {
+  logThree,
+  logFive,
+  logFour,
   logOne,
   logTwo,
-  logThree,
-  logFour,
-  logFive,
   logSix,
-} from "./log_steps.mjs";
-import { processImagesWithOCR } from "./process_images_with_ocr.mjs";
-import { concatenateAudioFiles } from "./concatenate_audio.mjs";
-import { amalgamateFiles } from "./amalgamate_text_files.mjs";
-import { processTextToSpeech } from "./process_tts.mjs";
-import { cleanCompleteText } from "./text_cleaner.mjs";
-import { translate } from "./translate.mjs";
-import fs from "fs";
+} from "./uitls/log_steps.mjs";
 
 // Load environment variables
 import dotenv from "dotenv";
