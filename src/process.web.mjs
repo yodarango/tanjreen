@@ -12,7 +12,7 @@ import {
   logOne,
   logTwo,
   logSix,
-} from "./uitls/log_steps.mjs";
+} from "./utils/log_steps.mjs";
 
 // Load environment variables
 import dotenv from "dotenv";
@@ -49,7 +49,7 @@ async function startProcess() {
   await logFive(processTextToSpeech, voice, bookTitle, language);
 
   // Step 6: Concatenate audio files
-  await logSix(concatenateAudioFiles, bookTitle);
+  await logSix(concatenateAudioFiles, bookTitle, language);
 }
 
 // Run the main function

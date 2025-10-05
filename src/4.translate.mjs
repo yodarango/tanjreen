@@ -117,18 +117,21 @@ export async function translate(bookTitle, language) {
 
     // Save the translated text
     const doneDir = process.env.DONE_DIR;
-    const sanitizedBookTitle = bookTitle
-      .replace(/[^a-zA-Z0-9\s]/g, "")
-      .replace(/\s+/g, "_");
-    const outputPath = path.join(
-      doneDir,
-      `${sanitizedBookTitle}_${language}.txt`
-    );
+    const sanitizedBookTitle =
+      bookTitle.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") +
+        `_${language}` || "";
 
-    // Ensure the done directory exists
-    if (!fs.existsSync(doneDir)) {
-      fs.mkdirSync(doneDir, { recursive: true });
+    const doneDirForBookTitle = path.join(doneDir, sanitizedBookTitle);
+
+    // Create the complete directory if it doesn't exist
+    if (!fs.existsSync(doneDirForBookTitle)) {
+      fs.mkdirSync(doneDirForBookTitle, { recursive: true });
     }
+
+    const outputPath = path.join(
+      doneDirForBookTitle,
+      `${sanitizedBookTitle}.txt`
+    );
 
     fs.writeFileSync(outputPath, translatedText, "utf8");
     console.log(` ✔ Translated text saved to: ${outputPath}`);

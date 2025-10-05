@@ -98,16 +98,28 @@ ${textChunk}`;
   }
 }
 
-/**
- * Clean the complete.txt file using OpenAI
+/* ******************************************************************************
+ * Clean the complete.txt file using OpenAI and then save it with the name of the
+ * book title. Also make sure to create the complete directory
+ * **********************************************************************
  */
 async function cleanCompleteText(bookTitle) {
   const doneDIr = process.env.DONE_DIR;
   const workingDir = process.env.WORKING_DIR;
   const inputFile = path.join(workingDir, "complete.txt");
 
-  const fileNameFromBookTitle = bookTitle.replace(/[^a-zA-Z0-9]/g, "_");
-  const outputFile = path.join(doneDIr, `${fileNameFromBookTitle}.txt`);
+  const sanitizedBookTitle = bookTitle
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  const doneDirForBookTitle = path.join(doneDIr, sanitizedBookTitle);
+
+  // Create the complete directory if it doesn't exist
+  if (!fs.existsSync(doneDirForBookTitle)) {
+    fs.mkdirSync(doneDirForBookTitle, { recursive: true });
+  }
+
+  const outputFile = path.join(doneDirForBookTitle, `${pathFromBookTitle}.txt`);
 
   try {
     // Check if complete.txt exists

@@ -17,19 +17,15 @@ const openai = new OpenAI({
 export async function processTextToSpeech(voice, bookTitle, language) {
   const workingDir = process.env.WORKING_DIR + "/audio";
   const doneDir = process.env.DONE_DIR;
-  const sanitizedTitle = bookTitle
-    .replace(/[^a-zA-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
 
-  let cleanedTextFile = path.join(
-    doneDir,
-    language && language !== ""
-      ? `${sanitizedTitle}_${language}.txt`
-      : `${sanitizedTitle}.txt`
-  );
+  const sanitizedBookTitle =
+    bookTitle.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") +
+      `_${language}` || "";
+
+  let cleanedTextFile = path.join(doneDir, `${sanitizedBookTitle}.txt`);
 
   // Output MP3 chunks under WORKING_DIR/<sanitized_bookTitle>
-  const audioDir = path.join(workingDir, sanitizedTitle);
+  const audioDir = path.join(workingDir, sanitizedBookTitle);
 
   try {
     // Ensure audio directory exists
@@ -40,7 +36,7 @@ export async function processTextToSpeech(voice, bookTitle, language) {
 
     // Resolve cleaned text file (fallback to non-translated if needed)
     if (!fs.existsSync(cleanedTextFile) && language) {
-      const fallback = path.join(doneDir, `${sanitizedTitle}.txt`);
+      const fallback = path.join(doneDir, `${sanitizedBookTitle}.txt`);
       if (fs.existsSync(fallback)) {
         console.log(
           ` - Translation file missing, falling back to: ${fallback}`

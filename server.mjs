@@ -10,10 +10,9 @@ dotenv.config();
 
 /**
  * Clean and recreate the working directory to avoid old files from previous runs
- * @param {string} workingDir - The path to the working directory to clean
  */
 async function cleanWorkingDirectory(workingDir) {
-  console.log("🧹 Cleaning working directory:", workingDir);
+  console.log(" - Cleaning working directory:", workingDir);
 
   try {
     // Remove all files in the working directory
@@ -23,7 +22,7 @@ async function cleanWorkingDirectory(workingDir) {
         const filePath = path.join(workingDir, file);
         if (fs.statSync(filePath).isFile()) {
           fs.unlinkSync(filePath);
-          console.log(`🗑️ Removed old file: ${file}`);
+          console.log(` - Removed old file: ${file}`);
         }
       }
     } else {
@@ -61,7 +60,7 @@ let transformationState = {
 // Get list of images in the images directory so we can show them to the user
 app.get("/api/images", (req, res) => {
   try {
-    const imagesDir = process.env.PENDING_DIR || "./server/content/1.pending";
+    const imagesDir = process.env.PENDING_DIR;
 
     if (!fs.existsSync(imagesDir)) {
       return res.json([]);
@@ -190,7 +189,7 @@ app.get("/api/progress", (req, res) => {
 // This is in charge of running every single part of the process and update the global state
 function startTransformationProcess() {
   // pass the book title and voice as a func param
-  const child = spawn("node", ["./server/process.web.mjs"], {
+  const child = spawn("node", ["./src/process.web.mjs"], {
     stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });

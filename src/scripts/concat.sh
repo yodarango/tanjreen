@@ -11,7 +11,7 @@ fi
 filename="$1"
 
 # Set the directory containing the MP3 files
-directory="./server/content/2.working/audio/$filename"
+directory="./src/content/2.working/audio/$filename"
 
 # Check if directory exists
 if [ ! -d "$directory" ]; then
@@ -32,4 +32,4 @@ done
 files="${files#|}"
 
 # Run FFmpeg to concatenate the MP3 files and compress the audio to 128 kbps bitrate
-ffmpeg -i "concat:$files" -b:a 128k ./audio/daniel_in_babylon/complete.mp3
+ffmpeg -i "concat:$files" -b:a 128k "./src/content/3.complete/$filename/$filename.mp3"

@@ -98,19 +98,23 @@ class AudiobookConverter {
   async startTransformation() {
     if (this.isProcessing) return;
 
-    this.isProcessing = true;
-    this.startBtn.disabled = true;
-    this.startBtn.textContent = "🔄 Processing...";
-
     const bookTitle = this.bookTitleInput.value.trim();
     const voice = this.voiceSelect.value;
     const language = this.languageSelect.value;
 
     if (!bookTitle) {
       alert("Please enter a book title");
-      this.resetStartButton();
       return;
     }
+
+    if (!voice || voice === "--- select a voice ---") {
+      alert("Please select a voice");
+      return;
+    }
+
+    this.isProcessing = true;
+    this.startBtn.disabled = true;
+    this.startBtn.textContent = "🔄 Processing...";
 
     try {
       // Start the transformation process

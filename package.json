@@ -16,7 +16,7 @@
     "electron": "electron .",
     "electron-dev": "electron . --dev",
     "start": "electron .",
-    "web": "nodemon server.mjs --ignore server/content/",
+    "web": "nodemon server.mjs",
     "build-mac": "./build-mac.sh",
     "package": "./package-app.sh"
   },

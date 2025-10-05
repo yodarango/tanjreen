@@ -1,17 +1,15 @@
 import { spawn } from "child_process";
 import fs from "fs";
 
-export async function concatenateAudioFiles(bookTitle) {
+export async function concatenateAudioFiles(bookTitle, language) {
   return new Promise((resolve, reject) => {
-    console.log(" - Starting audio concatenation...");
+    const sanitizedTitle =
+      bookTitle.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") +
+        `_${language}` || "";
 
-    const sanitizedTitle = bookTitle
-      .replace(/[^a-zA-Z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "");
-
-    if (!fs.existsSync("concat.sh")) {
+    if (!fs.existsSync("./scripts/concat.sh")) {
       console.log(" ❌ concat.sh script not found in server directory");
-      reject(new Error("concat.sh script not found"));
+      reject(new Error("    - concat.sh script not found"));
       return;
     }
 
@@ -30,7 +28,7 @@ export async function concatenateAudioFiles(bookTitle) {
     });
 
     concatProcess.stderr.on("data", (data) => {
-      console.log(` - concat.sh stderr: ${data}`);
+      console.log(` ❌ Error concatinating: \n ${data}`);
     });
 
     concatProcess.on("close", (code) => {
@@ -44,7 +42,7 @@ export async function concatenateAudioFiles(bookTitle) {
     });
 
     concatProcess.on("error", (error) => {
-      console.log(` ❌ concat.sh error: ${error.message}`);
+      console.log(` ❌ concat.sh error: \n ${error.message}`);
       reject(error);
     });
   });

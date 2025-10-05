@@ -1,0 +1,13 @@
+{
+  "watch": ["server.mjs", "src/**/*.mjs"],
+  "ignore": [
+    "src/content/**",
+    "src/content/2.working/**",
+    "**/*.txt",
+    "**/*.mp3",
+    "**/*.wav",
+    "**/*.json",
+    "public/**"
+  ],
+  "ext": "js,mjs"
+}
