@@ -119,7 +119,6 @@ app.post("/api/start-transformation", async (req, res) => {
     // Tell the state we are starting to run
     transformationState = {
       completed: false,
-
       isRunning: true,
       messages: [],
       currentStep: 0,
@@ -165,7 +164,6 @@ function startTransformationProcess() {
     stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });
-  return;
 
   // Check if spawn was successful
   if (!child) {
@@ -184,7 +182,6 @@ function startTransformationProcess() {
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
-    console.log(output);
     const lines = output.split("\n").filter((line) => line.trim());
 
     lines.forEach((line) => {

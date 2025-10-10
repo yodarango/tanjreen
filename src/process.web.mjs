@@ -32,10 +32,10 @@ async function startProcess() {
   const language = tempData.language || null;
 
   // Step 1: Process images with OCR
-  await logOne(processImagesWithOCR);
+  await logOne(processImagesWithOCR, bookTitle);
 
   // Step 2: Combine all text files
-  await logTwo(amalgamateFiles);
+  await logTwo(amalgamateFiles, bookTitle);
 
   // Step 3: Clean text with AI
   await logThree(cleanCompleteText, bookTitle);

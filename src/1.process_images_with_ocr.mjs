@@ -29,20 +29,30 @@ async function convertHeicToJpeg(heicPath, outputPath) {
  * file per image.
  * ****************************************************************************
  */
-async function processImagesWithOCR() {
+async function processImagesWithOCR(bookTitle) {
+  // where can I get the images from ?
   const imagesDir = process.env.PENDING_DIR;
-  const textDir = process.env.WORKING_DIR;
+
+  // Where do I need to write the text from the images to?
+  // (replace all special chars and spaces in the title with _)
+  let outputDir = process.env.WORKING_DIR;
+  const sanitizedBookTitle = bookTitle
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  outputDir = path.join(outputDir, sanitizedBookTitle, "text");
 
   try {
-    // Ensure directories exist
+    // Ensure the images dir  exist
     if (!fs.existsSync(imagesDir)) {
-      console.error(" ❌ Images directory does not exist");
+      console.error(` ❌ Images directory does not exist: ${imagesDir}`);
       return;
     }
 
-    if (!fs.existsSync(textDir)) {
-      fs.mkdirSync(textDir, { recursive: true });
-      console.log(` - Created text directory: ${textDir}`);
+    // Now ensure the output dir exists or create it if not
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+      console.log(` - Created text directory: ${outputDir}`);
     }
 
     // Read all files from images directory
@@ -65,7 +75,7 @@ async function processImagesWithOCR() {
     });
 
     if (imageFiles.length === 0) {
-      console.log(" ❌ No image files found in /images directory");
+      console.log(` ❌ No image files found in ${imagesDir} directory`);
       return;
     }
 
@@ -79,7 +89,7 @@ async function processImagesWithOCR() {
       const imageFile = imageFiles[i];
       const imagePath = path.join(imagesDir, imageFile);
       const outputFileName = `${i + 1}.txt`;
-      const outputPath = path.join(textDir, outputFileName);
+      const outputPath = path.join(outputDir, outputFileName);
 
       console.log(
         `   - Processing image ${i + 1}/${imageFiles.length}: ${imageFile}`
@@ -100,7 +110,7 @@ async function processImagesWithOCR() {
 
         // Configure Tesseract options
         const config = {
-          lang: process.env.TEXT_LANG,
+          lang: process.env.TEXT_LANG, // update this eventually to be udatable from the UI
           oem: 1, // OCR Engine Mode
           psm: 3, // Page Segmentation Mode
         };

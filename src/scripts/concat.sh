@@ -11,7 +11,7 @@ fi
 filename="$1"
 
 # Set the directory containing the MP3 files
-directory="./src/content/2.working/audio/$filename"
+directory="./src/content/2.working/$filename/audio"
 
 # Check if directory exists
 if [ ! -d "$directory" ]; then
@@ -31,5 +31,11 @@ done
 # Remove the leading pipe character from the files string
 files="${files#|}"
 
+# Output directory in DONE_DIR
+output_dir="./src/content/3.done/$filename"
+
+# Create output directory if it doesn't exist
+mkdir -p "$output_dir"
+
 # Run FFmpeg to concatenate the MP3 files and compress the audio to 128 kbps bitrate
-ffmpeg -i "concat:$files" -b:a 128k "./src/content/3.complete/$filename/$filename.mp3"
+ffmpeg -i "concat:$files" -b:a 128k "$output_dir/$filename.mp3"

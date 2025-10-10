@@ -104,9 +104,8 @@ ${textChunk}`;
  * **********************************************************************
  */
 async function cleanCompleteText(bookTitle) {
-  const doneDIr = process.env.DONE_DIR;
+  const doneDir = process.env.DONE_DIR;
   const workingDir = process.env.WORKING_DIR;
-  const inputFile = path.join(workingDir, "complete.txt");
 
   // Validate bookTitle parameter
   if (!bookTitle || typeof bookTitle !== "string" || bookTitle.trim() === "") {
@@ -130,9 +129,14 @@ async function cleanCompleteText(bookTitle) {
     return;
   }
 
-  const doneDirForBookTitle = path.join(doneDIr, sanitizedBookTitle);
+  // Input file is in WORKING_DIR/{bookTitle}/text/complete.txt
+  const textDir = path.join(workingDir, sanitizedBookTitle, "text");
+  const inputFile = path.join(textDir, "complete.txt");
 
-  // Create the complete directory if it doesn't exist
+  // Output file is in DONE_DIR/{bookTitle}/{bookTitle}.txt
+  const doneDirForBookTitle = path.join(doneDir, sanitizedBookTitle);
+
+  // Create the done directory if it doesn't exist
   if (!fs.existsSync(doneDirForBookTitle)) {
     fs.mkdirSync(doneDirForBookTitle, { recursive: true });
   }
@@ -146,7 +150,7 @@ async function cleanCompleteText(bookTitle) {
     // Check if complete.txt exists
     if (!fs.existsSync(inputFile)) {
       console.log(
-        " ❌ complete.txt file not found in /text directory. Run 'npm run combine' first to create the complete.txt file"
+        ` ❌ complete.txt file not found at ${inputFile}. Run Step 2 first to create the complete.txt file`
       );
       return;
     }
@@ -202,6 +206,3 @@ async function cleanCompleteText(bookTitle) {
 
 // Export the function for use in other modules
 export { cleanCompleteText };
-
-const bookTitle = `${process.argv[2]}`;
-cleanCompleteText(bookTitle);

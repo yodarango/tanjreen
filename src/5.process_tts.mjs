@@ -15,7 +15,7 @@ const openai = new OpenAI({
  * ************************************************************
  */
 export async function processTextToSpeech(voice, bookTitle, language) {
-  const workingDir = process.env.WORKING_DIR + "/audio";
+  const workingDir = process.env.WORKING_DIR;
   const doneDir = process.env.DONE_DIR;
 
   // Sanitize book title and append language if provided
@@ -33,8 +33,8 @@ export async function processTextToSpeech(voice, bookTitle, language) {
     `${sanitizedBookTitle}/${sanitizedBookTitle}.txt`
   );
 
-  // Output MP3 chunks under WORKING_DIR/<sanitized_bookTitle>
-  const audioDir = workingDir;
+  // Output MP3 chunks under WORKING_DIR/<sanitized_bookTitle>/audio
+  const audioDir = workingDir + "/" + sanitizedBookTitle + "/audio";
 
   try {
     // Ensure audio directory exists
