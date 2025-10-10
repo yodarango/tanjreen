@@ -2,6 +2,11 @@
 
 Transform your images into complete audiobooks using OCR and AI. Tangerin provides a complete pipeline for processing images with OCR (Optical Character Recognition) and converting the extracted text to speech using OpenAI's TTS API.
 
+## 📖 Documentation
+
+For a detailed explanation of the complete process flow, including all steps, directory structure, and file paths, see:
+**[PROCESS_FLOW.md](./PROCESS_FLOW.md)**
+
 ## Prerequisites
 
 1. **Tesseract OCR**: You need to have Tesseract installed on your system
