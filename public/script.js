@@ -20,6 +20,13 @@ class AudiobookConverter {
     this.progressFill = document.getElementById("progressFill");
     this.progressText = document.getElementById("progressText");
     this.voiceSamplePlayer = document.getElementById("voiceSamplePlayer");
+
+    // Drag and drop elements
+    this.dropZone = document.getElementById("dropZone");
+    this.fileInput = document.getElementById("fileInput");
+    this.uploadProgress = document.getElementById("uploadProgress");
+    this.uploadProgressFill = document.getElementById("uploadProgressFill");
+    this.uploadProgressText = document.getElementById("uploadProgressText");
   }
 
   setupEventListeners() {
@@ -31,6 +38,133 @@ class AudiobookConverter {
     this.languageSelect.addEventListener("change", () =>
       this.updateTranslationStep()
     );
+
+    // Drag and drop event listeners
+    this.setupDragAndDrop();
+  }
+
+  setupDragAndDrop() {
+    // Prevent default drag behaviors
+    ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+      this.dropZone.addEventListener(eventName, this.preventDefaults, false);
+      document.body.addEventListener(eventName, this.preventDefaults, false);
+    });
+
+    // Highlight drop zone when item is dragged over it
+    ["dragenter", "dragover"].forEach((eventName) => {
+      this.dropZone.addEventListener(eventName, () => {
+        this.dropZone.classList.add("drag-over");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      this.dropZone.addEventListener(eventName, () => {
+        this.dropZone.classList.remove("drag-over");
+      });
+    });
+
+    // Handle dropped files
+    this.dropZone.addEventListener("drop", (e) => {
+      const files = e.dataTransfer.files;
+      this.handleFiles(files);
+    });
+
+    // Handle click to browse
+    this.dropZone.addEventListener("click", () => {
+      this.fileInput.click();
+    });
+
+    // Handle file input change
+    this.fileInput.addEventListener("change", (e) => {
+      const files = e.target.files;
+      this.handleFiles(files);
+    });
+  }
+
+  preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  async handleFiles(files) {
+    if (files.length === 0) return;
+
+    // Filter for image files only
+    const imageFiles = Array.from(files).filter((file) => {
+      return (
+        file.type.startsWith("image/") ||
+        file.name.toLowerCase().endsWith(".heic") ||
+        file.name.toLowerCase().endsWith(".heif")
+      );
+    });
+
+    if (imageFiles.length === 0) {
+      alert("Please select valid image files");
+      return;
+    }
+
+    // Show upload progress
+    this.uploadProgress.style.display = "block";
+    this.dropZone.querySelector(".drop-zone-content").style.display = "none";
+
+    try {
+      // Step 1: Clear pending directory first
+      this.uploadProgressText.textContent = "Clearing old images...";
+      this.uploadProgressFill.style.width = "25%";
+
+      const clearResponse = await fetch("/api/clear-pending", {
+        method: "POST",
+      });
+
+      if (!clearResponse.ok) {
+        throw new Error("Failed to clear pending directory");
+      }
+
+      // Step 2: Create FormData and append files
+      const formData = new FormData();
+      imageFiles.forEach((file) => {
+        formData.append("images", file);
+      });
+
+      // Step 3: Upload files
+      this.uploadProgressText.textContent = `Uploading ${imageFiles.length} images...`;
+      this.uploadProgressFill.style.width = "50%";
+
+      const response = await fetch("/api/upload-images", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const result = await response.json();
+
+      // Complete progress
+      this.uploadProgressFill.style.width = "100%";
+      this.uploadProgressText.textContent = `✅ Uploaded ${result.files.length} images successfully!`;
+
+      // Wait a moment then hide progress and reload images
+      setTimeout(() => {
+        this.uploadProgress.style.display = "none";
+        this.dropZone.querySelector(".drop-zone-content").style.display =
+          "block";
+        this.uploadProgressFill.style.width = "0%";
+        this.loadImages();
+      }, 2000);
+    } catch (error) {
+      console.error("Upload error:", error);
+      this.uploadProgressText.textContent =
+        "❌ Upload failed. Please try again.";
+      this.uploadProgressFill.style.width = "0%";
+
+      setTimeout(() => {
+        this.uploadProgress.style.display = "none";
+        this.dropZone.querySelector(".drop-zone-content").style.display =
+          "block";
+      }, 3000);
+    }
   }
 
   updateVoiceSample() {

@@ -1,6 +1,7 @@
 import { validateTransformationRequest } from "./src/utils/validate.mjs";
 import { spawn } from "child_process";
 import express from "express";
+import multer from "multer";
 import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
@@ -39,6 +40,43 @@ async function cleanWorkingDirectory(workingDir) {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const pendingDir = process.env.PENDING_DIR;
+    // Ensure directory exists
+    if (!fs.existsSync(pendingDir)) {
+      fs.mkdirSync(pendingDir, { recursive: true });
+    }
+    cb(null, pendingDir);
+  },
+  filename: function (req, file, cb) {
+    // Keep original filename
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    // Accept images only
+    const allowedTypes = /jpeg|jpg|png|gif|bmp|tiff|webp|heic|heif/;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimetype =
+      allowedTypes.test(file.mimetype) ||
+      file.mimetype === "image/heic" ||
+      file.mimetype === "image/heif";
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed!"));
+    }
+  },
+});
 
 // Middleware
 app.use(express.json());
@@ -86,6 +124,57 @@ app.get("/api/images", (req, res) => {
   } catch (error) {
     console.error("Error reading images directory:", error);
     res.status(500).json({ error: "Failed to read images directory" });
+  }
+});
+
+// Clear pending directory endpoint - must be called before upload
+app.post("/api/clear-pending", (req, res) => {
+  try {
+    const pendingDir = process.env.PENDING_DIR;
+
+    console.log("🗑️  Clearing pending directory...");
+    if (fs.existsSync(pendingDir)) {
+      const existingFiles = fs.readdirSync(pendingDir);
+      for (const file of existingFiles) {
+        const filePath = path.join(pendingDir, file);
+        if (fs.statSync(filePath).isFile()) {
+          fs.unlinkSync(filePath);
+          console.log(`   Deleted: ${file}`);
+        }
+      }
+    } else {
+      // Create directory if it doesn't exist
+      fs.mkdirSync(pendingDir, { recursive: true });
+      console.log("📁 Created pending directory");
+    }
+
+    console.log("✅ Pending directory cleared");
+    res.json({ success: true, message: "Pending directory cleared" });
+  } catch (error) {
+    console.error("❌ Error clearing pending directory:", error);
+    res.status(500).json({ error: "Failed to clear pending directory" });
+  }
+});
+
+// Upload images - files are saved by multer middleware
+app.post("/api/upload-images", upload.array("images"), (req, res) => {
+  try {
+    // Files are already uploaded by multer middleware
+    const uploadedFiles = req.files || [];
+
+    console.log(`✅ Uploaded ${uploadedFiles.length} new images`);
+    uploadedFiles.forEach((file) => {
+      console.log(`   📁 ${file.filename}`);
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully uploaded ${uploadedFiles.length} images`,
+      files: uploadedFiles.map((f) => f.filename),
+    });
+  } catch (error) {
+    console.error("❌ Error uploading images:", error);
+    res.status(500).json({ error: "Failed to upload images" });
   }
 });
 
@@ -143,7 +232,7 @@ app.post("/api/start-transformation", async (req, res) => {
     );
 
     // Start the transformation process
-    startTransformationProcess();
+    startTransformationProcess(language);
 
     res.json({ success: true, message: "Transformation started" });
   } catch (error) {
@@ -158,7 +247,7 @@ app.get("/api/progress", (req, res) => {
 });
 
 // This is in charge of running every single part of the process and update the global state
-function startTransformationProcess() {
+function startTransformationProcess(language) {
   // pass the book title and voice as a func param
   const child = spawn("node", ["./src/process.web.mjs"], {
     stdio: ["pipe", "pipe", "pipe"],
@@ -179,6 +268,10 @@ function startTransformationProcess() {
     "Converting text to speech",
     "Complete pipeline finished",
   ];
+
+  if (language) {
+    stepKeywords.splice(4, 0, "Starting translation");
+  }
 
   child.stdout.on("data", (data) => {
     const output = data.toString();

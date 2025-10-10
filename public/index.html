@@ -82,6 +82,40 @@
               </select>
             </div>
 
+            <!-- Drag and Drop Zone -->
+            <div class="drag-drop-section">
+              <h3>📤 Upload Images</h3>
+              <div id="dropZone" class="drop-zone">
+                <div class="drop-zone-content">
+                  <span class="drop-icon">📁</span>
+                  <p class="drop-text">Drag & drop images here</p>
+                  <p class="drop-subtext">or click to browse</p>
+                  <input
+                    type="file"
+                    id="fileInput"
+                    multiple
+                    accept="image/*,.heic,.heif"
+                    style="display: none"
+                  />
+                </div>
+                <div
+                  id="uploadProgress"
+                  class="upload-progress"
+                  style="display: none"
+                >
+                  <div class="upload-progress-bar">
+                    <div
+                      id="uploadProgressFill"
+                      class="upload-progress-fill"
+                    ></div>
+                  </div>
+                  <p id="uploadProgressText" class="upload-progress-text">
+                    Uploading...
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div class="images-section">
               <h3>📷 Images to Process</h3>
               <div id="imagesList" class="images-list">
