@@ -10,8 +10,8 @@ fi
 # Get the filename from the first argument
 filename="$1"
 
-# Set the directory containing the MP3 files
-directory="./src/content/2.working/$filename/audio"
+# Set the directory containing the MP3 files - directly under working/audio/
+directory="./src/content/2.working/audio"
 
 # Check if directory exists
 if [ ! -d "$directory" ]; then

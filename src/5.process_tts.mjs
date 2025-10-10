@@ -33,8 +33,8 @@ export async function processTextToSpeech(voice, bookTitle, language) {
     `${sanitizedBookTitle}/${sanitizedBookTitle}.txt`
   );
 
-  // Output MP3 chunks under WORKING_DIR/<sanitized_bookTitle>/audio
-  const audioDir = workingDir + "/" + sanitizedBookTitle + "/audio";
+  // Output MP3 chunks directly under WORKING_DIR/audio/
+  const audioDir = path.join(workingDir, "audio");
 
   try {
     // Ensure audio directory exists

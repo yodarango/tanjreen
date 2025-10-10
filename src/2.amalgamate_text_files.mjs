@@ -12,14 +12,10 @@ import path from "path";
  * ********************************************************************************
  */
 async function amalgamateFiles(bookTitle) {
-  const textDirWorking = process.env.WORKING_DIR;
+  const workingDir = process.env.WORKING_DIR;
 
-  // Sanitize book title and append language if provided
-  let sanitizedBookTitle = bookTitle
-    .replace(/[^a-zA-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-
-  const textDir = path.join(textDirWorking, sanitizedBookTitle, "text");
+  // Write directly to WORKING_DIR/text/
+  const textDir = path.join(workingDir, "text");
   const outputFile = path.join(textDir, "complete.txt");
 
   try {

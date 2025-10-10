@@ -97,16 +97,15 @@ export async function translate(bookTitle, language) {
   console.log(` - Starting translation to ${language}...`);
 
   try {
-    // Read the complete text file
+    // Read the complete text file from WORKING_DIR/text/
     const workingDir = process.env.WORKING_DIR;
+    const textDir = path.join(workingDir, "text");
+    const completeTextPath = path.join(textDir, "complete.txt");
 
-    // Sanitize book title and append language if provided
+    // Sanitize book title for output
     let sanitizedBookTitle = bookTitle
       .replace(/[^a-zA-Z0-9]+/g, "_")
       .replace(/^_+|_+$/g, "");
-
-    const textDir = path.join(workingDir, sanitizedBookTitle, "text");
-    const completeTextPath = path.join(textDir, "complete.txt");
 
     if (!fs.existsSync(completeTextPath)) {
       throw new Error(" ❌ complete.txt file not found");

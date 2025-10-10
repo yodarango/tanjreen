@@ -129,8 +129,8 @@ async function cleanCompleteText(bookTitle) {
     return;
   }
 
-  // Input file is in WORKING_DIR/{bookTitle}/text/complete.txt
-  const textDir = path.join(workingDir, sanitizedBookTitle, "text");
+  // Input file is in WORKING_DIR/text/complete.txt
+  const textDir = path.join(workingDir, "text");
   const inputFile = path.join(textDir, "complete.txt");
 
   // Output file is in DONE_DIR/{bookTitle}/{bookTitle}.txt

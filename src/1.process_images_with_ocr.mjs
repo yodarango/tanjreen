@@ -34,13 +34,8 @@ async function processImagesWithOCR(bookTitle) {
   const imagesDir = process.env.PENDING_DIR;
 
   // Where do I need to write the text from the images to?
-  // (replace all special chars and spaces in the title with _)
-  let outputDir = process.env.WORKING_DIR;
-  const sanitizedBookTitle = bookTitle
-    .replace(/[^a-zA-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-
-  outputDir = path.join(outputDir, sanitizedBookTitle, "text");
+  // Write directly to WORKING_DIR/text/
+  const outputDir = path.join(process.env.WORKING_DIR, "text");
 
   try {
     // Ensure the images dir  exist
