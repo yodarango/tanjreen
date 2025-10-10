@@ -199,6 +199,7 @@ function startTransformationProcess() {
 
   // if the spawn process fails, then alert the console
   child.stderr.on("data", (data) => {
+    console.log(data);
     const error = data.toString();
     console.error(error);
   });

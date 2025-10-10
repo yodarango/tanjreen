@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tangerin - OCR to Audiobook Converter</title>
+    <!-- Single consolidated stylesheet -->
     <link rel="stylesheet" href="styles.css" />
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="icon" type="image/png" href="tangerin.png" sizes="128x128" />
   </head>
   <body>
     <div class="container">
@@ -47,7 +48,7 @@
                 <option value="shimmer">Shimmer</option>
                 <option value="verse">Verse</option>
               </select>
-              <button id="playVoiceSample" class="voice-sample-btn">
+              <button id="playVoiceSample" class="btn success voice-sample-btn">
                 🔊 Play Sample
               </button>
             </div>
@@ -92,7 +93,11 @@
             </div>
 
             <div class="action-section">
-              <button id="startTransformation" class="start-btn" disabled>
+              <button
+                id="startTransformation"
+                class="btn primary start-btn"
+                disabled
+              >
                 🚀 Start Transformation
               </button>
             </div>
