@@ -108,9 +108,27 @@ async function cleanCompleteText(bookTitle) {
   const workingDir = process.env.WORKING_DIR;
   const inputFile = path.join(workingDir, "complete.txt");
 
+  // Validate bookTitle parameter
+  if (!bookTitle || typeof bookTitle !== "string" || bookTitle.trim() === "") {
+    console.error(
+      " ❌ Error: Book title is required and must be a non-empty string"
+    );
+    console.error(" ❌ Please provide a valid book title as a parameter");
+    return;
+  }
+
   const sanitizedBookTitle = bookTitle
     .replace(/[^a-zA-Z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+
+  // Additional check after sanitization
+  if (sanitizedBookTitle === "") {
+    console.error(
+      " ❌ Error: Book title contains no valid alphanumeric characters"
+    );
+    console.error(` ❌ Original title: "${bookTitle}"`);
+    return;
+  }
 
   const doneDirForBookTitle = path.join(doneDIr, sanitizedBookTitle);
 

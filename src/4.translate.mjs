@@ -117,6 +117,7 @@ export async function translate(bookTitle, language) {
 
     // Save the translated text
     const doneDir = process.env.DONE_DIR;
+
     const sanitizedBookTitle =
       bookTitle.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") +
         `_${language}` || "";

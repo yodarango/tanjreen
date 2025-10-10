@@ -42,7 +42,7 @@ async function processImagesWithOCR() {
 
     if (!fs.existsSync(textDir)) {
       fs.mkdirSync(textDir, { recursive: true });
-      console.log(" - Created text directory");
+      console.log(` - Created text directory: ${textDir}`);
     }
 
     // Read all files from images directory
