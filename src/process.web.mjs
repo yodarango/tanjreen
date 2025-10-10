@@ -48,6 +48,8 @@ async function startProcess() {
   // Step 5: Convert text to speech
   await logFive(processTextToSpeech, voice, bookTitle, language);
 
+  return;
+
   // Step 6: Concatenate audio files
   await logSix(concatenateAudioFiles, bookTitle, language);
 }

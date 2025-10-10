@@ -119,12 +119,15 @@ async function cleanCompleteText(bookTitle) {
     fs.mkdirSync(doneDirForBookTitle, { recursive: true });
   }
 
-  const outputFile = path.join(doneDirForBookTitle, `${pathFromBookTitle}.txt`);
+  const outputFile = path.join(
+    doneDirForBookTitle,
+    `${sanitizedBookTitle}.txt`
+  );
 
   try {
     // Check if complete.txt exists
     if (!fs.existsSync(inputFile)) {
-      console.error(
+      console.log(
         " ❌ complete.txt file not found in /text directory. Run 'npm run combine' first to create the complete.txt file"
       );
       return;
@@ -181,3 +184,6 @@ async function cleanCompleteText(bookTitle) {
 
 // Export the function for use in other modules
 export { cleanCompleteText };
+
+const bookTitle = `${process.argv[2]}`;
+cleanCompleteText(bookTitle);

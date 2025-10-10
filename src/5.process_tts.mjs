@@ -22,10 +22,13 @@ export async function processTextToSpeech(voice, bookTitle, language) {
     bookTitle.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") +
       `_${language}` || "";
 
-  let cleanedTextFile = path.join(doneDir, `${sanitizedBookTitle}.txt`);
+  let cleanedTextFile = path.join(
+    doneDir,
+    `${sanitizedBookTitle}/${sanitizedBookTitle}.txt`
+  );
 
   // Output MP3 chunks under WORKING_DIR/<sanitized_bookTitle>
-  const audioDir = path.join(workingDir, sanitizedBookTitle);
+  const audioDir = workingDir;
 
   try {
     // Ensure audio directory exists

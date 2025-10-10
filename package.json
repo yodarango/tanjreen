@@ -18,7 +18,8 @@
     "start": "electron .",
     "web": "nodemon server.mjs",
     "build-mac": "./build-mac.sh",
-    "package": "./package-app.sh"
+    "package": "./package-app.sh",
+    "s3": "node src/3.sanitize_text.mjs"
   },
   "keywords": [],
   "license": "ISC",
