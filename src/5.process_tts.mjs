@@ -18,9 +18,15 @@ export async function processTextToSpeech(voice, bookTitle, language) {
   const workingDir = process.env.WORKING_DIR + "/audio";
   const doneDir = process.env.DONE_DIR;
 
-  const sanitizedBookTitle =
-    bookTitle.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") +
-      `_${language}` || "";
+  // Sanitize book title and append language if provided
+  let sanitizedBookTitle = bookTitle
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  // Only append language if it's a valid non-empty string
+  if (language && typeof language === "string" && language.trim() !== "") {
+    sanitizedBookTitle += `_${language}`;
+  }
 
   let cleanedTextFile = path.join(
     doneDir,

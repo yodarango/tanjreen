@@ -27,9 +27,9 @@ async function startProcess() {
   const tempData = JSON.parse(
     fs.readFileSync(`${workingDir}/temp.json`, "utf8")
   );
-  const bookTitle = tempData.bookTitle;
-  const voice = tempData.voice;
-  const language = tempData.language;
+  const bookTitle = tempData.bookTitle || "";
+  const voice = tempData.voice || "echo";
+  const language = tempData.language || null;
 
   // Step 1: Process images with OCR
   await logOne(processImagesWithOCR);
@@ -47,8 +47,6 @@ async function startProcess() {
 
   // Step 5: Convert text to speech
   await logFive(processTextToSpeech, voice, bookTitle, language);
-
-  return;
 
   // Step 6: Concatenate audio files
   await logSix(concatenateAudioFiles, bookTitle, language);

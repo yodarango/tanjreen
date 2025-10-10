@@ -118,9 +118,15 @@ export async function translate(bookTitle, language) {
     // Save the translated text
     const doneDir = process.env.DONE_DIR;
 
-    const sanitizedBookTitle =
-      bookTitle.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") +
-        `_${language}` || "";
+    // Sanitize book title and append language
+    let sanitizedBookTitle = bookTitle
+      .replace(/[^a-zA-Z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+
+    // Append language (should always be valid in translate function)
+    if (language && typeof language === "string" && language.trim() !== "") {
+      sanitizedBookTitle += `_${language}`;
+    }
 
     const doneDirForBookTitle = path.join(doneDir, sanitizedBookTitle);
 

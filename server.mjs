@@ -146,8 +146,6 @@ app.post("/api/start-transformation", async (req, res) => {
     // Start the transformation process
     startTransformationProcess();
 
-    return;
-
     res.json({ success: true, message: "Transformation started" });
   } catch (error) {
     console.error("Error starting transformation:", error);
@@ -167,6 +165,7 @@ function startTransformationProcess() {
     stdio: ["pipe", "pipe", "pipe"],
     cwd: process.cwd(),
   });
+  return;
 
   // Check if spawn was successful
   if (!child) {
