@@ -2,16 +2,9 @@
   "name": "tangerin",
   "version": "1.0.0",
   "description": "Transform images into audiobooks using OCR and AI",
-  "main": "main.js",
-  "homepage": ".",
   "author": "",
   "scripts": {
-    "electron": "electron .",
-    "electron-dev": "electron . --dev",
     "web": "nodemon server.mjs",
-    "build-mac": "./src/scripts/build-mac.sh",
-    "install-app": "./src/scripts/install-app.sh",
-    "package": "./src/scripts/package-app.sh",
     "start": "node server.mjs"
   },
   "keywords": [],
@@ -25,7 +18,6 @@
     "openai": "^4.26.0"
   },
   "devDependencies": {
-    "electron": "^37.3.0",
     "nodemon": "^3.1.10"
   }
 }
