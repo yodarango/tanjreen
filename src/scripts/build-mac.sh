@@ -3,7 +3,7 @@
 # Build script for macOS app bundle
 # This creates a distributable .app bundle for macOS
 
-APP_NAME="Tangerin"
+APP_NAME="tangerin"
 APP_BUNDLE="${APP_NAME}.app"
 BUNDLE_ID="com.danielrangel.tangerin"
 VERSION="1.0.0"
@@ -56,7 +56,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" << EOF
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>Tangerin</string>
+    <string>tangerin</string>
     <key>CFBundleIdentifier</key>
     <string>${BUNDLE_ID}</string>
     <key>CFBundleName</key>
@@ -87,7 +87,7 @@ EOF
 
 # Create executable script
 echo "⚙️ Creating executable..."
-cat > "$APP_BUNDLE/Contents/MacOS/Tangerin" << 'EOF'
+cat > "$APP_BUNDLE/Contents/MacOS/tangerin" << 'EOF'
 #!/bin/bash
 
 # Get the directory where this script is located
@@ -97,30 +97,79 @@ RESOURCES_DIR="$SCRIPT_DIR/../Resources"
 # Change to the resources directory
 cd "$RESOURCES_DIR"
 
-# Check if Node.js is available
-if ! command -v node &> /dev/null; then
-    osascript -e 'display dialog "Node.js is required to run this application. Please install Node.js from nodejs.org" buttons {"OK"} default button "OK"'
+# Find Node.js in common locations
+NODE_PATH=""
+if command -v node &> /dev/null; then
+    NODE_PATH="node"
+elif [ -f "/usr/local/bin/node" ]; then
+    NODE_PATH="/usr/local/bin/node"
+elif [ -f "/opt/homebrew/bin/node" ]; then
+    NODE_PATH="/opt/homebrew/bin/node"
+elif [ -f "$HOME/.nvm/versions/node/*/bin/node" ]; then
+    NODE_PATH=$(ls -t $HOME/.nvm/versions/node/*/bin/node 2>/dev/null | head -1)
+elif [ -f "/usr/bin/node" ]; then
+    NODE_PATH="/usr/bin/node"
+fi
+
+# Check if Node.js was found
+if [ -z "$NODE_PATH" ]; then
+    osascript -e 'display dialog "Node.js is required to run tangerin.\n\nPlease install Node.js from nodejs.org and try again." buttons {"OK"} default button "OK" with icon stop'
+    open "https://nodejs.org"
     exit 1
+fi
+
+# Find npm in common locations
+NPM_PATH=""
+if command -v npm &> /dev/null; then
+    NPM_PATH="npm"
+elif [ -f "/usr/local/bin/npm" ]; then
+    NPM_PATH="/usr/local/bin/npm"
+elif [ -f "/opt/homebrew/bin/npm" ]; then
+    NPM_PATH="/opt/homebrew/bin/npm"
+elif [ -f "$HOME/.nvm/versions/node/*/bin/npm" ]; then
+    NPM_PATH=$(ls -t $HOME/.nvm/versions/node/*/bin/npm 2>/dev/null | head -1)
+elif [ -f "/usr/bin/npm" ]; then
+    NPM_PATH="/usr/bin/npm"
 fi
 
 # Check if npm dependencies are installed
 if [ ! -d "node_modules" ]; then
-    osascript -e 'display dialog "Installing dependencies... This may take a few minutes." buttons {"OK"} default button "OK"'
-    npm install
+    osascript -e 'display dialog "Installing dependencies...\n\nThis may take a few minutes on first launch." buttons {"OK"} default button "OK" with icon note'
+    $NPM_PATH install --production
 fi
 
-# Start the application
-npm run electron
+# Start the server and open browser
+echo "Starting tangerin server..."
+$NODE_PATH server.mjs &
+SERVER_PID=$!
+
+# Wait for server to start
+sleep 2
+
+# Open browser to the app
+open "http://localhost:3000"
+
+# Show notification
+osascript -e 'display notification "Server running on http://localhost:3000" with title "tangerin" subtitle "Ready to convert images to audiobooks"'
+
+# Keep the app running (wait for server process)
+wait $SERVER_PID
 EOF
 
 # Make executable
-chmod +x "$APP_BUNDLE/Contents/MacOS/Tangerin"
+chmod +x "$APP_BUNDLE/Contents/MacOS/tangerin"
 
 echo "✅ macOS app bundle created successfully!"
 echo "📱 App bundle: $APP_BUNDLE"
 echo ""
 echo "🚀 To install:"
+echo "   # Remove old version (if exists)"
+echo "   rm -rf /Applications/$APP_BUNDLE"
+echo "   # Move new version"
 echo "   mv '$APP_BUNDLE' /Applications/"
+echo ""
+echo "   Or use the install script:"
+echo "   npm run install-app"
 echo ""
 echo "🧪 To test:"
 echo "   open '$APP_BUNDLE'"

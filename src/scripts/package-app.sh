@@ -3,11 +3,11 @@
 # Package script for creating distributable DMG
 # This creates a DMG file that users can download and install
 
-APP_NAME="Tangerin"
+APP_NAME="tangerin"
 APP_BUNDLE="${APP_NAME}.app"
-DMG_NAME="Tangerin-v1.0.0.dmg"
+DMG_NAME="tangerin-v1.0.0.dmg"
 TEMP_DMG="temp.dmg"
-VOLUME_NAME="Tangerin"
+VOLUME_NAME="tangerin"
 
 echo "📦 Creating distributable DMG..."
 
@@ -42,26 +42,40 @@ ln -s /Applications "$TEMP_DIR/Applications"
 # Create README for users
 echo "📄 Creating user README..."
 cat > "$TEMP_DIR/README.txt" << EOF
-Tangerin v1.0.0
+tangerin v1.0.0 🍊
+OCR to Audiobook Converter
 
 INSTALLATION:
-1. Drag "Tangerin.app" to the Applications folder
+1. Drag "tangerin.app" to the Applications folder
 2. Open the app from Applications or Launchpad
+3. The app will open in your default web browser
 
 REQUIREMENTS:
 - macOS 10.13 or later
-- Node.js (will prompt to install if missing)
+- Node.js 14+ (will prompt to install if missing)
+- Internet connection (for OpenAI API)
 
 FIRST RUN:
-- The app may take a moment to install dependencies on first launch
+- The app will install dependencies on first launch (may take 2-3 minutes)
 - You may see a security warning - go to System Preferences > Security & Privacy to allow the app
+- Your browser will open to http://localhost:3000
 
 USAGE:
-1. Place your images in the /images folder within the app
-2. Configure book title and voice
-3. Click "Start Transformation"
-4. Wait for the process to complete
-5. Find your audiobook in the /audio folder
+1. Drag and drop images into the upload zone (or click to browse)
+2. Enter book title and select voice
+3. Optionally select a language for translation
+4. Click "Start Transformation"
+5. Wait for the process to complete (progress shown in real-time)
+6. Download your audiobook from the completed section
+
+CONFIGURATION:
+- You'll need an OpenAI API key (set in .env file)
+- Images are processed with OCR (Tesseract)
+- Text is cleaned and converted to speech (OpenAI TTS)
+
+STOPPING THE APP:
+- Close the browser tab
+- Quit the app from the Dock or use Cmd+Q
 
 SUPPORT:
 For issues or questions, contact: danranngel@gmail.com
@@ -101,7 +115,7 @@ tell application "Finder"
         set viewOptions to the icon view options of container window
         set arrangement of viewOptions to not arranged
         set icon size of viewOptions to 72
-        set position of item "$APP_NAME.app" of container window to {150, 150}
+        set position of item "${APP_NAME}.app" of container window to {150, 150}
         set position of item "Applications" of container window to {350, 150}
         set position of item "README.txt" of container window to {250, 250}
         close
