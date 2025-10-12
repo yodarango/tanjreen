@@ -89,17 +89,19 @@ class AudiobookConverter {
   async handleFiles(files) {
     if (files.length === 0) return;
 
-    // Filter for image files only
-    const imageFiles = Array.from(files).filter((file) => {
+    // Filter for image and PDF files
+    const validFiles = Array.from(files).filter((file) => {
       return (
         file.type.startsWith("image/") ||
+        file.type === "application/pdf" ||
         file.name.toLowerCase().endsWith(".heic") ||
-        file.name.toLowerCase().endsWith(".heif")
+        file.name.toLowerCase().endsWith(".heif") ||
+        file.name.toLowerCase().endsWith(".pdf")
       );
     });
 
-    if (imageFiles.length === 0) {
-      alert("Please select valid image files");
+    if (validFiles.length === 0) {
+      alert("Please select valid image or PDF files");
       return;
     }
 
@@ -122,12 +124,12 @@ class AudiobookConverter {
 
       // Step 2: Create FormData and append files
       const formData = new FormData();
-      imageFiles.forEach((file) => {
+      validFiles.forEach((file) => {
         formData.append("images", file);
       });
 
       // Step 3: Upload files
-      this.uploadProgressText.textContent = `Uploading ${imageFiles.length} images...`;
+      this.uploadProgressText.textContent = `Uploading ${validFiles.length} files...`;
       this.uploadProgressFill.style.width = "50%";
 
       const response = await fetch("/api/upload-images", {

@@ -7,6 +7,7 @@ Transform images into audiobooks using OCR and AI.
 ## Quick Start
 
 ### Docker (Recommended)
+
 ```bash
 # Start on port 8011
 docker-compose up -d
@@ -16,6 +17,7 @@ docker-compose up -d
 ```
 
 ### Local
+
 ```bash
 npm install
 npm start
@@ -27,10 +29,12 @@ npm start
 ## Requirements
 
 ### Docker
+
 - Docker & Docker Compose
 - OpenAI API Key
 
 ### Local
+
 - Node.js v14+
 - Tesseract OCR
 - FFmpeg
@@ -41,6 +45,7 @@ npm start
 ## Configuration
 
 Create `.env` file:
+
 ```env
 OPENAI_API_KEY=your-api-key-here
 PENDING_DIR=./src/content/1.pending
@@ -55,7 +60,7 @@ TEXT_LANG=eng
 
 1. Start the server (Docker or local)
 2. Open browser to the URL
-3. Drag & drop images or click to browse
+3. Drag & drop images/PDFs or click to browse
 4. Enter book title, select voice, optional language
 5. Click "Start Transformation"
 6. Download your audiobook MP3
@@ -91,16 +96,20 @@ docker-compose ps
 To use `tangerin.danielrangel.com` instead of `localhost:8011`:
 
 **macOS/Linux:**
+
 ```bash
 sudo nano /etc/hosts
 ```
+
 Add line:
+
 ```
 127.0.0.1 tangerin.danielrangel.com
 ```
 
 **Windows:**
 Edit `C:\Windows\System32\drivers\etc\hosts` as Administrator, add:
+
 ```
 127.0.0.1 tangerin.danielrangel.com
 ```
@@ -111,7 +120,7 @@ Access at: `http://tangerin.danielrangel.com:8011`
 
 ## Process Flow
 
-1. **OCR Processing** - Extract text from images (Tesseract)
+1. **Text Extraction** - Extract text from images (Tesseract OCR) or PDFs (pdf-parse)
 2. **Text Amalgamation** - Combine all text files
 3. **Text Sanitization** - Clean and format with AI (OpenAI GPT)
 4. **Translation** (optional) - Translate to selected language (OpenAI)
@@ -124,9 +133,9 @@ Access at: `http://tangerin.danielrangel.com:8011`
 
 ```
 src/content/
-├── 1.pending/     - Uploaded images (cleared on each upload)
+├── 1.pending/     - Uploaded images/PDFs (cleared on each upload)
 ├── 2.working/     - Temporary processing files
-│   ├── text/      - OCR text files, complete.txt
+│   ├── text/      - Extracted text files, complete.txt
 │   └── audio/     - Audio chunks
 └── 3.done/        - Final audiobooks
     ├── BookTitle/
@@ -141,7 +150,9 @@ src/content/
 
 ## Features
 
-- Drag & drop image upload
+- Drag & drop image/PDF upload
+- PDF text extraction (no OCR needed for PDFs)
+- Image OCR processing (Tesseract)
 - Real-time progress tracking
 - Multiple TTS voices (alloy, echo, fable, onyx, nova, shimmer)
 - Translation support (50+ languages)
@@ -171,6 +182,7 @@ GET  /api/download/:folder/:file - Download completed files
 ## Manual Processing
 
 Run individual steps:
+
 ```bash
 node src/1.process_images_with_ocr.mjs
 node src/2.amalgamate_text_files.mjs
@@ -185,6 +197,7 @@ node src/6.concatenate_audio.mjs
 ## Docker Details
 
 **Container includes:**
+
 - Node.js 18
 - Tesseract OCR (English)
 - FFmpeg
@@ -203,28 +216,33 @@ node src/6.concatenate_audio.mjs
 ## Troubleshooting
 
 **Container won't start:**
+
 ```bash
 docker-compose logs
 docker-compose up -d --build
 ```
 
 **Port 8011 in use:**
+
 ```bash
 lsof -i :8011
 # Or change port in docker-compose.yml
 ```
 
 **Upload fails:**
+
 ```bash
 chmod -R 755 src/content
 ```
 
 **Transformation fails:**
+
 - Check OpenAI API key in `.env`
 - Check logs: `docker-compose logs -f`
 - Verify internet connection
 
 **Can't access domain:**
+
 - Check `/etc/hosts` file has the entry
 - Flush DNS cache: `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder`
 
@@ -264,4 +282,3 @@ chmod -R 755 src/content
 ## License
 
 ISC
-
