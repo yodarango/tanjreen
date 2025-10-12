@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  tangerin:
+    build: .
+    container_name: tangerin
+    ports:
+      - "8011:8011"
+    environment:
+      - PORT=8011
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PENDING_DIR=./src/content/1.pending
+      - WORKING_DIR=./src/content/2.working
+      - DONE_DIR=./src/content/3.done
+      - TEXT_LANG=eng
+    volumes:
+      # Persist content directories
+      - ./src/content:/app/src/content
+      # Optional: mount .env file
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    networks:
+      - tangerin-network
+
+networks:
+  tangerin-network:
+    driver: bridge
+

@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+*.md
+!README.md
+.DS_Store
+tangerin.app
+src/content/1.pending/*
+src/content/2.working/*
+src/content/3.done/*
+
