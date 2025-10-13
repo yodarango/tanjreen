@@ -11,26 +11,23 @@ dotenv.config();
 
 /**
  * Clean and recreate the working directory to avoid old files from previous runs
+ * Completely deletes and recreates 2.working directory including all subdirectories
  */
 async function cleanWorkingDirectory(workingDir) {
   console.log(" - Cleaning working directory:", workingDir);
 
   try {
-    // Remove all files in the working directory
+    // Completely remove the working directory if it exists
     if (fs.existsSync(workingDir)) {
-      const files = fs.readdirSync(workingDir);
-      for (const file of files) {
-        const filePath = path.join(workingDir, file);
-        if (fs.statSync(filePath).isFile()) {
-          fs.unlinkSync(filePath);
-          console.log(` - Removed old file: ${file}`);
-        }
-      }
-    } else {
-      // Create the directory if it doesn't exist
-      fs.mkdirSync(workingDir, { recursive: true });
-      console.log("📁 Created working directory:", workingDir);
+      fs.rmSync(workingDir, { recursive: true, force: true });
+      console.log(" ✔ Deleted entire working directory");
     }
+
+    // Recreate the working directory structure
+    fs.mkdirSync(workingDir, { recursive: true });
+    fs.mkdirSync(path.join(workingDir, "text"), { recursive: true });
+    fs.mkdirSync(path.join(workingDir, "audio"), { recursive: true });
+    console.log(" ✔ Recreated working directory with subdirectories");
     console.log("✅ Working directory cleaned successfully");
   } catch (error) {
     console.error("❌ Error cleaning working directory:", error.message);
@@ -263,14 +260,25 @@ function startTransformationProcess(language) {
   }
 
   let currentStep = 0;
-  const stepKeywords = ["Step 1", "Step 2", "Step 3", "Step 5", "Step 6"];
+  const stepKeywords = [
+    "Step 1",
+    "Step 2",
+    "Step 3",
+    "Step 4",
+    "Step 5",
+    "Step 6",
+  ];
 
-  if (language) {
-    stepKeywords.splice(4, 0, "Step 4");
+  // Remove Step 4 (translation) if no language specified
+  if (!language) {
+    stepKeywords.splice(3, 1); // Remove "Step 4"
   }
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
+
+    console.log(output);
+
     const lines = output.split("\n").filter((line) => line.trim());
 
     lines.forEach((line) => {
@@ -288,7 +296,6 @@ function startTransformationProcess(language) {
 
   // if the spawn process fails, then alert the console
   child.stderr.on("data", (data) => {
-    console.log(data);
     const error = data.toString();
     console.error(error);
   });

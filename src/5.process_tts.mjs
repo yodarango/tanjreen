@@ -109,6 +109,8 @@ export async function processTextToSpeech(voice, bookTitle, language) {
           input: chunk,
         });
 
+        console.log(`   - Response for chunk: ${chunkIndex + 1}: \n ${mp3}`);
+
         const buffer = Buffer.from(await mp3.arrayBuffer());
         await fs.promises.writeFile(chunkAudioPath, buffer);
 
