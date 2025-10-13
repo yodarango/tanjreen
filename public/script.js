@@ -314,12 +314,22 @@ class AudiobookConverter {
       "step-ocr",
       "step-combine",
       "step-clean",
+      "step-translate",
       "step-tts",
       "step-complete",
     ];
 
+    // Check if translation step is visible
+    const translateStep = document.getElementById("step-translate");
+    const isTranslationVisible = translateStep.style.display !== "none";
+
     steps.forEach((stepId, index) => {
       const stepElement = document.getElementById(stepId);
+
+      // Skip translation step if it's not visible
+      if (stepId === "step-translate" && !isTranslationVisible) {
+        return;
+      }
 
       if (index < currentStep) {
         this.updateStepStatus(stepId, "completed", "✅");
