@@ -1,8 +1,12 @@
 import tesseract from "node-tesseract-ocr";
 import heicConvert from "heic-convert";
-import pdfParse from "pdf-parse";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /* ****************************************************************************
  * Convert HEIC file to JPEG format
@@ -25,14 +29,34 @@ async function convertHeicToJpeg(heicPath, outputPath) {
 }
 
 /* ****************************************************************************
- * Extract text from PDF file
+ * Extract text from PDF file using pdfjs-dist
  * ****************************************************************************
  */
 async function extractTextFromPDF(pdfPath) {
   try {
     const dataBuffer = fs.readFileSync(pdfPath);
-    const data = await pdfParse(dataBuffer);
-    return data.text;
+    const uint8Array = new Uint8Array(dataBuffer);
+
+    // Load the PDF document
+    const loadingTask = pdfjsLib.getDocument({
+      data: uint8Array,
+      useSystemFonts: true,
+    });
+
+    const pdfDocument = await loadingTask.promise;
+    const numPages = pdfDocument.numPages;
+
+    let fullText = "";
+
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item) => item.str).join(" ");
+      fullText += pageText + "\n\n";
+    }
+
+    return fullText.trim();
   } catch (error) {
     throw new Error(` ❌ Failed to extract text from PDF: ${error.message}`);
   }

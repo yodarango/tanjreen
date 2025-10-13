@@ -96,7 +96,7 @@ let transformationState = {
 
 // API Routes
 
-// Get list of images in the images directory so we can show them to the user
+// Get list of images and PDFs in the pending directory so we can show them to the user
 app.get("/api/images", (req, res) => {
   try {
     const imagesDir = process.env.PENDING_DIR;
@@ -106,7 +106,7 @@ app.get("/api/images", (req, res) => {
     }
 
     const files = fs.readdirSync(imagesDir);
-    const imageFiles = files.filter((file) => {
+    const processableFiles = files.filter((file) => {
       const ext = path.extname(file).toLowerCase();
       return [
         ".jpg",
@@ -118,10 +118,11 @@ app.get("/api/images", (req, res) => {
         ".webp",
         ".heic",
         ".heif",
+        ".pdf",
       ].includes(ext);
     });
 
-    res.json(imageFiles.sort());
+    res.json(processableFiles.sort());
   } catch (error) {
     console.error("Error reading images directory:", error);
     res.status(500).json({ error: "Failed to read images directory" });
@@ -262,16 +263,10 @@ function startTransformationProcess(language) {
   }
 
   let currentStep = 0;
-  const stepKeywords = [
-    "Processing images with OCR",
-    "Combining text files",
-    "Cleaning text with OpenAI",
-    "Converting text to speech",
-    "Complete pipeline finished",
-  ];
+  const stepKeywords = ["Step 1", "Step 2", "Step 3", "Step 5", "Step 6"];
 
   if (language) {
-    stepKeywords.splice(4, 0, "Starting translation");
+    stepKeywords.splice(4, 0, "Step 4");
   }
 
   child.stdout.on("data", (data) => {
