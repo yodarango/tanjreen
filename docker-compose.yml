@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   tangerin:
@@ -13,6 +13,8 @@ services:
       - WORKING_DIR=./src/content/2.working
       - DONE_DIR=./src/content/3.done
       - TEXT_LANG=eng
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-this-to-something-secure}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-tangerin2024}
     volumes:
       # Persist content directories
       - ./src/content:/app/src/content
@@ -25,4 +27,3 @@ services:
 networks:
   tangerin-network:
     driver: bridge
-

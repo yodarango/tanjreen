@@ -1,8 +1,11 @@
 import { validateTransformationRequest } from "./src/utils/validate.mjs";
+import { authenticateToken } from "./src/middleware/auth.mjs";
 import { spawn } from "child_process";
 import express from "express";
 import multer from "multer";
 import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import path from "path";
 import fs from "fs";
 
@@ -36,7 +39,7 @@ async function cleanWorkingDirectory(workingDir) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8013;
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -93,8 +96,44 @@ let transformationState = {
 
 // API Routes
 
+// Login endpoint - NOT protected
+app.post("/api/login", async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ error: "Password is required" });
+    }
+
+    // Get password from environment variable
+    const authPassword = process.env.AUTH_PASSWORD || "tangerin2024";
+
+    // Compare password (plain text for now as requested)
+    if (password !== authPassword) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || "your-secret-key-change-this";
+    const token = jwt.sign(
+      { authenticated: true, timestamp: Date.now() },
+      jwtSecret,
+      { expiresIn: "24h" }
+    );
+
+    res.json({
+      success: true,
+      token: token,
+      message: "Login successful",
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
 // Get list of images and PDFs in the pending directory so we can show them to the user
-app.get("/api/images", (req, res) => {
+app.get("/api/images", authenticateToken, (req, res) => {
   try {
     const imagesDir = process.env.PENDING_DIR;
 
@@ -127,7 +166,7 @@ app.get("/api/images", (req, res) => {
 });
 
 // Clear pending directory endpoint - must be called before upload
-app.post("/api/clear-pending", (req, res) => {
+app.post("/api/clear-pending", authenticateToken, (req, res) => {
   try {
     const pendingDir = process.env.PENDING_DIR;
 
@@ -156,29 +195,34 @@ app.post("/api/clear-pending", (req, res) => {
 });
 
 // Upload images - files are saved by multer middleware
-app.post("/api/upload-images", upload.array("images"), (req, res) => {
-  try {
-    // Files are already uploaded by multer middleware
-    const uploadedFiles = req.files || [];
+app.post(
+  "/api/upload-images",
+  authenticateToken,
+  upload.array("images"),
+  (req, res) => {
+    try {
+      // Files are already uploaded by multer middleware
+      const uploadedFiles = req.files || [];
 
-    console.log(`✅ Uploaded ${uploadedFiles.length} new images`);
-    uploadedFiles.forEach((file) => {
-      console.log(`   📁 ${file.filename}`);
-    });
+      console.log(`✅ Uploaded ${uploadedFiles.length} new images`);
+      uploadedFiles.forEach((file) => {
+        console.log(`   📁 ${file.filename}`);
+      });
 
-    res.json({
-      success: true,
-      message: `Successfully uploaded ${uploadedFiles.length} images`,
-      files: uploadedFiles.map((f) => f.filename),
-    });
-  } catch (error) {
-    console.error("❌ Error uploading images:", error);
-    res.status(500).json({ error: "Failed to upload images" });
+      res.json({
+        success: true,
+        message: `Successfully uploaded ${uploadedFiles.length} images`,
+        files: uploadedFiles.map((f) => f.filename),
+      });
+    } catch (error) {
+      console.error("❌ Error uploading images:", error);
+      res.status(500).json({ error: "Failed to upload images" });
+    }
   }
-});
+);
 
 // Once the user click start transformation, this will be ran
-app.post("/api/start-transformation", async (req, res) => {
+app.post("/api/start-transformation", authenticateToken, async (req, res) => {
   try {
     const { bookTitle, voice, language } = req.body;
 
@@ -241,7 +285,7 @@ app.post("/api/start-transformation", async (req, res) => {
 });
 
 // Get transformation progress
-app.get("/api/progress", (req, res) => {
+app.get("/api/progress", authenticateToken, (req, res) => {
   res.json(transformationState);
 });
 

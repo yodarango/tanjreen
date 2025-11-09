@@ -29,6 +29,10 @@ PENDING_DIR=./src/content/1.pending
 WORKING_DIR=./src/content/2.working
 DONE_DIR=./src/content/3.done
 TEXT_LANG=eng
+
+# Authentication
+JWT_SECRET=your-secret-key-change-this-to-something-secure
+AUTH_PASSWORD=tangerin2024
 EOF
     echo "   ✅ Created .env file"
     echo "   ⚠️  Please edit .env and add your OpenAI API key"

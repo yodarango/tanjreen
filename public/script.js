@@ -3,10 +3,51 @@ class AudiobookConverter {
     this.isProcessing = false;
     this.currentStep = 0;
     this.totalSteps = 5;
+    this.authToken = localStorage.getItem("authToken");
 
-    this.initializeElements();
-    this.setupEventListeners();
-    this.loadImages();
+    // Check authentication before initializing
+    this.checkAuth().then((isAuthenticated) => {
+      if (!isAuthenticated) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      this.initializeElements();
+      this.setupEventListeners();
+      this.loadImages();
+    });
+  }
+
+  async checkAuth() {
+    if (!this.authToken) {
+      return false;
+    }
+
+    // Verify token is valid
+    try {
+      const response = await fetch("/api/progress", {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        localStorage.removeItem("authToken");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Auth check error:", error);
+      localStorage.removeItem("authToken");
+      return false;
+    }
+  }
+
+  getAuthHeaders() {
+    return {
+      Authorization: `Bearer ${this.authToken}`,
+    };
   }
 
   initializeElements() {
@@ -20,6 +61,7 @@ class AudiobookConverter {
     this.progressFill = document.getElementById("progressFill");
     this.progressText = document.getElementById("progressText");
     this.voiceSamplePlayer = document.getElementById("voiceSamplePlayer");
+    this.logoutBtn = document.getElementById("logoutBtn");
 
     // Drag and drop elements
     this.dropZone = document.getElementById("dropZone");
@@ -38,9 +80,15 @@ class AudiobookConverter {
     this.languageSelect.addEventListener("change", () =>
       this.updateTranslationStep()
     );
+    this.logoutBtn.addEventListener("click", () => this.logout());
 
     // Drag and drop event listeners
     this.setupDragAndDrop();
+  }
+
+  logout() {
+    localStorage.removeItem("authToken");
+    window.location.href = "/login.html";
   }
 
   setupDragAndDrop() {
@@ -116,6 +164,7 @@ class AudiobookConverter {
 
       const clearResponse = await fetch("/api/clear-pending", {
         method: "POST",
+        headers: this.getAuthHeaders(),
       });
 
       if (!clearResponse.ok) {
@@ -134,6 +183,7 @@ class AudiobookConverter {
 
       const response = await fetch("/api/upload-images", {
         method: "POST",
+        headers: this.getAuthHeaders(),
         body: formData,
       });
 
@@ -206,7 +256,9 @@ class AudiobookConverter {
 
   async loadImages() {
     try {
-      const response = await fetch("/api/images");
+      const response = await fetch("/api/images", {
+        headers: this.getAuthHeaders(),
+      });
       const images = await response.json();
 
       this.displayImages(images);
@@ -258,6 +310,7 @@ class AudiobookConverter {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...this.getAuthHeaders(),
         },
         body: JSON.stringify({
           bookTitle: bookTitle,
@@ -281,7 +334,9 @@ class AudiobookConverter {
 
   async pollProgress() {
     try {
-      const response = await fetch("/api/progress");
+      const response = await fetch("/api/progress", {
+        headers: this.getAuthHeaders(),
+      });
       const data = await response.json();
 
       this.updateProgress(data.progress);
