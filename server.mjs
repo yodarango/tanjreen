@@ -106,7 +106,7 @@ app.post("/api/login", async (req, res) => {
     }
 
     // Get password from environment variable
-    const authPassword = process.env.AUTH_PASSWORD || "tangerin2024";
+    const authPassword = process.env.AUTH_PASSWORD;
 
     // Compare password (plain text for now as requested)
     if (password !== authPassword) {
