@@ -154,8 +154,8 @@ class AudiobookConverter {
     }
 
     // Show upload progress
-    this.uploadProgress.style.display = "block";
-    this.dropZone.querySelector(".drop-zone-content").style.display = "none";
+    this.uploadProgress.classList.remove("hidden");
+    this.dropZone.querySelector(".drop-zone-content").classList.add("hidden");
 
     try {
       // Step 1: Clear pending directory first
@@ -199,9 +199,10 @@ class AudiobookConverter {
 
       // Wait a moment then hide progress and reload images
       setTimeout(() => {
-        this.uploadProgress.style.display = "none";
-        this.dropZone.querySelector(".drop-zone-content").style.display =
-          "block";
+        this.uploadProgress.classList.add("hidden");
+        this.dropZone
+          .querySelector(".drop-zone-content")
+          .classList.remove("hidden");
         this.uploadProgressFill.style.width = "0%";
         this.loadImages();
       }, 2000);
@@ -212,9 +213,10 @@ class AudiobookConverter {
       this.uploadProgressFill.style.width = "0%";
 
       setTimeout(() => {
-        this.uploadProgress.style.display = "none";
-        this.dropZone.querySelector(".drop-zone-content").style.display =
-          "block";
+        this.uploadProgress.classList.add("hidden");
+        this.dropZone
+          .querySelector(".drop-zone-content")
+          .classList.remove("hidden");
       }, 3000);
     }
   }
@@ -231,9 +233,9 @@ class AudiobookConverter {
     const translateStep = document.getElementById("step-translate");
 
     if (selectedLanguage && selectedLanguage !== "") {
-      translateStep.style.display = "flex";
+      translateStep.classList.remove("hidden");
     } else {
-      translateStep.style.display = "none";
+      translateStep.classList.add("hidden");
     }
   }
 
@@ -376,7 +378,7 @@ class AudiobookConverter {
 
     // Check if translation step is visible
     const translateStep = document.getElementById("step-translate");
-    const isTranslationVisible = translateStep.style.display !== "none";
+    const isTranslationVisible = !translateStep.classList.contains("hidden");
 
     steps.forEach((stepId, index) => {
       const stepElement = document.getElementById(stepId);

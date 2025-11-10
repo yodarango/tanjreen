@@ -12,32 +12,15 @@
   <body>
     <div class="container">
       <header>
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          "
-        >
-          <div>
-            <h1>🍊 Tangerin</h1>
+        <div class="header-container">
+          <div class="header-title">
+            <h1>
+              <img src="tangerin_logo.webp" alt="Tangerin" class="logo-img" />
+              Tangerin
+            </h1>
             <p>Transform your images into a complete audiobook</p>
           </div>
-          <button
-            id="logoutBtn"
-            class="btn"
-            style="
-              background: #dc3545;
-              color: white;
-              padding: 10px 20px;
-              border: none;
-              border-radius: 6px;
-              cursor: pointer;
-              font-size: 0.9rem;
-            "
-          >
-            🚪 Logout
-          </button>
+          <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
         </div>
       </header>
 
@@ -120,14 +103,10 @@
                     id="fileInput"
                     multiple
                     accept="image/*,.heic,.heif,.pdf,application/pdf"
-                    style="display: none"
+                    class="hidden"
                   />
                 </div>
-                <div
-                  id="uploadProgress"
-                  class="upload-progress"
-                  style="display: none"
-                >
+                <div id="uploadProgress" class="upload-progress hidden">
                   <div class="upload-progress-bar">
                     <div
                       id="uploadProgressFill"
@@ -188,7 +167,7 @@
                 <span class="step-text">AI Cleaning</span>
                 <span class="step-status">⏳</span>
               </div>
-              <div class="step" id="step-translate" style="display: none">
+              <div class="step hidden" id="step-translate">
                 <span class="step-icon">🌍</span>
                 <span class="step-text">Translation</span>
                 <span class="step-status">⏳</span>
