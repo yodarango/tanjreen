@@ -15,6 +15,7 @@ class AudiobookConverter {
       this.initializeElements();
       this.setupEventListeners();
       this.loadImages();
+      this.checkProcessStatus();
     });
   }
 
@@ -41,6 +42,40 @@ class AudiobookConverter {
       console.error("Auth check error:", error);
       localStorage.removeItem("authToken");
       return false;
+    }
+  }
+
+  async checkProcessStatus() {
+    try {
+      const response = await fetch("/api/progress", {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+
+      // If a process is running or not yet completed, resume polling
+      if (
+        data.isRunning ||
+        (data.progress > 0 && !data.completed && !data.error)
+      ) {
+        console.log("🔄 Process in progress detected, resuming polling...");
+        this.isProcessing = true;
+        this.startBtn.disabled = true;
+        this.startBtn.textContent = "⏳ Processing...";
+
+        // Update UI with current state
+        this.updateProgress(data.progress);
+        this.updateSteps(data.currentStep, data.currentStepProcess);
+
+        // Start polling
+        this.pollProgress();
+      }
+    } catch (error) {
+      console.error("Error checking process status:", error);
     }
   }
 
