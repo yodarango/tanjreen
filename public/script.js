@@ -62,6 +62,7 @@ class AudiobookConverter {
     this.progressText = document.getElementById("progressText");
     this.voiceSamplePlayer = document.getElementById("voiceSamplePlayer");
     this.logoutBtn = document.getElementById("logoutBtn");
+    this.cleanPendingBtn = document.getElementById("cleanPendingBtn");
 
     // Drag and drop elements
     this.dropZone = document.getElementById("dropZone");
@@ -81,6 +82,9 @@ class AudiobookConverter {
       this.updateTranslationStep()
     );
     this.logoutBtn.addEventListener("click", () => this.logout());
+    this.cleanPendingBtn.addEventListener("click", () =>
+      this.cleanPendingContent()
+    );
 
     // Drag and drop event listeners
     this.setupDragAndDrop();
@@ -89,6 +93,36 @@ class AudiobookConverter {
   logout() {
     localStorage.removeItem("authToken");
     window.location.href = "/login";
+  }
+
+  async cleanPendingContent() {
+    if (
+      !confirm(
+        "⚠️ Are you sure you want to clean all pending content? This will delete all files in the pending directory."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/clear-pending", {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      alert(`✅ ${data.message}`);
+
+      // Refresh the images count
+      this.checkImages();
+    } catch (error) {
+      console.error("Error cleaning pending content:", error);
+      alert("❌ Error cleaning pending content: " + error.message);
+    }
   }
 
   setupDragAndDrop() {

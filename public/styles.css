@@ -151,6 +151,31 @@ header p {
   font-weight: 400;
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.clean-pending-btn {
+  background: var(--dr-warning);
+  color: var(--dr-alpha);
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: var(--dr-font-primary);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.clean-pending-btn:hover {
+  box-shadow: 0 0 0.2rem var(--dr-warning), -0.2rem 0 1rem var(--dr-warning),
+    0.2rem 0 1rem var(--dr-warning);
+  transform: scale(0.95);
+}
+
 .logout-btn {
   background: var(--dr-danger);
   color: var(--dr-pi);

@@ -331,10 +331,8 @@ function startTransformationProcess(language) {
     "Step 6",
   ];
 
-  // Remove Step 4 (translation) if no language specified
-  if (!language) {
-    stepKeywords.splice(3, 1); // Remove "Step 4"
-  }
+  // Calculate total steps (skip Step 4 if no translation)
+  const totalSteps = language ? 6 : 5;
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
@@ -366,8 +364,9 @@ function startTransformationProcess(language) {
         if (line.includes(keyword)) {
           currentStep = index;
           transformationState.currentStep = currentStep;
-          transformationState.progress =
-            (currentStep / stepKeywords.length) * 100;
+
+          // Calculate progress based on actual total steps
+          transformationState.progress = (currentStep / totalSteps) * 100;
 
           // Reset sub-step progress when moving to a new step
           transformationState.currentStepProcess = {
@@ -399,7 +398,7 @@ function startTransformationProcess(language) {
     if (code === 0) {
       transformationState.completed = true;
       transformationState.progress = 100;
-      transformationState.currentStep = stepKeywords.length;
+      transformationState.currentStep = totalSteps;
 
       console.log(transformationState);
       transformationState.messages.push({
