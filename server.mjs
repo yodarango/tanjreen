@@ -5,6 +5,7 @@ import { spawn } from "child_process";
 import jwt from "jsonwebtoken";
 import express from "express";
 import multer from "multer";
+import archiver from "archiver";
 import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
@@ -89,6 +90,10 @@ app.get("/login", (req, res) => {
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public", "index.html"));
+});
+
+app.get("/content", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "public", "content.html"));
 });
 
 // Serve static files for assets (CSS, JS, images, etc.)
@@ -309,6 +314,163 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
 // Get transformation progress
 app.get("/api/progress", authenticateToken, (req, res) => {
   res.json(transformationState);
+});
+
+// Get list of completed content files and folders
+app.get("/api/content", authenticateToken, (req, res) => {
+  try {
+    const doneDir = process.env.DONE_DIR;
+
+    if (!fs.existsSync(doneDir)) {
+      return res.json({ items: [] });
+    }
+
+    const items = fs.readdirSync(doneDir);
+    const itemDetails = items
+      .map((item) => {
+        const itemPath = path.join(doneDir, item);
+        const stats = fs.statSync(itemPath);
+
+        if (stats.isDirectory()) {
+          // For directories, calculate total size of all files inside
+          let totalSize = 0;
+          let fileCount = 0;
+
+          const calculateDirSize = (dirPath) => {
+            const dirItems = fs.readdirSync(dirPath);
+            dirItems.forEach((subItem) => {
+              const subItemPath = path.join(dirPath, subItem);
+              const subStats = fs.statSync(subItemPath);
+              if (subStats.isFile()) {
+                totalSize += subStats.size;
+                fileCount++;
+              } else if (subStats.isDirectory()) {
+                calculateDirSize(subItemPath);
+              }
+            });
+          };
+
+          calculateDirSize(itemPath);
+
+          return {
+            name: item,
+            type: "folder",
+            size: totalSize,
+            fileCount: fileCount,
+            createdAt: stats.birthtime,
+            modifiedAt: stats.mtime,
+          };
+        } else {
+          return {
+            name: item,
+            type: "file",
+            size: stats.size,
+            createdAt: stats.birthtime,
+            modifiedAt: stats.mtime,
+          };
+        }
+      })
+      .sort((a, b) => b.createdAt - a.createdAt); // Sort by newest first
+
+    res.json({ items: itemDetails });
+  } catch (error) {
+    console.error("Error reading content directory:", error);
+    res.status(500).json({ error: "Failed to read content directory" });
+  }
+});
+
+// Download a specific file or folder from done directory
+app.get("/api/content/download/:filename", authenticateToken, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const doneDir = process.env.DONE_DIR;
+    const itemPath = path.join(doneDir, filename);
+
+    // Security check: ensure the item is within the done directory
+    const resolvedPath = path.resolve(itemPath);
+    const resolvedDoneDir = path.resolve(doneDir);
+    if (!resolvedPath.startsWith(resolvedDoneDir)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    if (!fs.existsSync(itemPath)) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    const stats = fs.statSync(itemPath);
+
+    if (stats.isFile()) {
+      // Download single file
+      res.download(itemPath, filename);
+    } else if (stats.isDirectory()) {
+      // Create ZIP archive for folder
+      const archive = archiver("zip", {
+        zlib: { level: 9 }, // Maximum compression
+      });
+
+      // Set response headers
+      res.attachment(`${filename}.zip`);
+      res.setHeader("Content-Type", "application/zip");
+
+      // Pipe archive to response
+      archive.pipe(res);
+
+      // Add directory contents to archive
+      archive.directory(itemPath, false);
+
+      // Handle errors
+      archive.on("error", (err) => {
+        console.error("Archive error:", err);
+        res.status(500).json({ error: "Failed to create archive" });
+      });
+
+      // Finalize the archive
+      archive.finalize();
+    } else {
+      return res.status(400).json({ error: "Invalid item type" });
+    }
+  } catch (error) {
+    console.error("Error downloading item:", error);
+    res.status(500).json({ error: "Failed to download item" });
+  }
+});
+
+// Delete a specific file or folder from done directory
+app.delete("/api/content/delete/:filename", authenticateToken, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const doneDir = process.env.DONE_DIR;
+    const itemPath = path.join(doneDir, filename);
+
+    // Security check: ensure the item is within the done directory
+    const resolvedPath = path.resolve(itemPath);
+    const resolvedDoneDir = path.resolve(doneDir);
+    if (!resolvedPath.startsWith(resolvedDoneDir)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    if (!fs.existsSync(itemPath)) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    const stats = fs.statSync(itemPath);
+
+    if (stats.isFile()) {
+      fs.unlinkSync(itemPath);
+      console.log(`🗑️  Deleted file: ${filename}`);
+    } else if (stats.isDirectory()) {
+      fs.rmSync(itemPath, { recursive: true, force: true });
+      console.log(`🗑️  Deleted folder: ${filename}`);
+    }
+
+    res.json({
+      success: true,
+      message: `"${filename}" deleted successfully`,
+    });
+  } catch (error) {
+    console.error("Error deleting item:", error);
+    res.status(500).json({ error: "Failed to delete item" });
+  }
 });
 
 // This is in charge of running every single part of the process and update the global state

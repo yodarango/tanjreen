@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Content Library - Tangerin 🍊</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="content.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <div class="header-left">
+          <h1>📚 Content Library</h1>
+          <p class="subtitle">Your completed audiobooks</p>
+        </div>
+        <div class="header-actions">
+          <button id="backBtn" class="back-btn">← Back to Converter</button>
+          <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+        </div>
+      </header>
+
+      <main class="content-main">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading your audiobooks...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state hidden">
+          <div class="empty-icon">📭</div>
+          <h2>No audiobooks yet</h2>
+          <p>Your completed audiobooks will appear here.</p>
+          <button id="goToConverterBtn" class="primary-btn">
+            Start Converting
+          </button>
+        </div>
+
+        <!-- Content Grid -->
+        <div id="contentGrid" class="content-grid hidden">
+          <!-- Content items will be dynamically inserted here -->
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error-state hidden">
+          <div class="error-icon">⚠️</div>
+          <h2>Error loading content</h2>
+          <p id="errorMessage">Something went wrong. Please try again.</p>
+          <button id="retryBtn" class="primary-btn">Retry</button>
+        </div>
+      </main>
+    </div>
+
+    <script src="content.js"></script>
+  </body>
+</html>
+

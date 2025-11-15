@@ -97,6 +97,7 @@ class AudiobookConverter {
     this.progressText = document.getElementById("progressText");
     this.voiceSamplePlayer = document.getElementById("voiceSamplePlayer");
     this.logoutBtn = document.getElementById("logoutBtn");
+    this.viewContentBtn = document.getElementById("viewContentBtn");
     this.cleanPendingBtn = document.getElementById("cleanPendingBtn");
 
     // Drag and drop elements
@@ -117,6 +118,7 @@ class AudiobookConverter {
       this.updateTranslationStep()
     );
     this.logoutBtn.addEventListener("click", () => this.logout());
+    this.viewContentBtn.addEventListener("click", () => this.viewContent());
     this.cleanPendingBtn.addEventListener("click", () =>
       this.cleanPendingContent()
     );
@@ -128,6 +130,10 @@ class AudiobookConverter {
   logout() {
     localStorage.removeItem("authToken");
     window.location.href = "/login";
+  }
+
+  viewContent() {
+    window.location.href = "/content";
   }
 
   async cleanPendingContent() {
