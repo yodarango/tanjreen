@@ -1,11 +1,10 @@
 import { validateTransformationRequest } from "./src/utils/validate.mjs";
 import { authenticateToken } from "./src/middleware/auth.mjs";
 import { spawn } from "child_process";
+import jwt from "jsonwebtoken";
 import express from "express";
 import multer from "multer";
 import dotenv from "dotenv";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import path from "path";
 import fs from "fs";
 
@@ -81,6 +80,17 @@ const upload = multer({
 
 // Middleware
 app.use(express.json());
+
+// HTML page routes (without .html extension)
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "public", "login.html"));
+});
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "public", "index.html"));
+});
+
+// Serve static files for assets (CSS, JS, images, etc.)
 app.use(express.static("public"));
 
 // Global state for tracking progress

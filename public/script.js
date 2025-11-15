@@ -8,7 +8,7 @@ class AudiobookConverter {
     // Check authentication before initializing
     this.checkAuth().then((isAuthenticated) => {
       if (!isAuthenticated) {
-        window.location.href = "/login.html";
+        window.location.href = "/login";
         return;
       }
 
@@ -88,7 +88,7 @@ class AudiobookConverter {
 
   logout() {
     localStorage.removeItem("authToken");
-    window.location.href = "/login.html";
+    window.location.href = "/login";
   }
 
   setupDragAndDrop() {
