@@ -90,6 +90,15 @@ export async function processTextToSpeech(voice, bookTitle, language) {
 
     console.log(` - Split into ${chunks.length} chunks for TTS processing`);
 
+    // Send initial progress message
+    console.log(
+      JSON.stringify({
+        type: "STEP_PROGRESS",
+        totalItems: chunks.length,
+        currentItem: 0,
+      })
+    );
+
     // Process each chunk
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
@@ -100,6 +109,15 @@ export async function processTextToSpeech(voice, bookTitle, language) {
         `   - Creating audio for chunk ${chunkIndex + 1}/${
           chunks.length
         }: ${chunkAudioFileName}`
+      );
+
+      // Send progress update
+      console.log(
+        JSON.stringify({
+          type: "STEP_PROGRESS",
+          totalItems: chunks.length,
+          currentItem: chunkIndex + 1,
+        })
       );
 
       try {

@@ -342,14 +342,16 @@ class AudiobookConverter {
       const data = await response.json();
 
       this.updateProgress(data.progress);
-      this.updateSteps(data.currentStep);
+      this.updateSteps(data.currentStep, data.currentStepProcess);
 
       if (data.completed) {
         this.resetStartButton();
         this.updateStepStatus("step-complete", "completed", "✅");
+        this.hideAllSubsteps();
         alert("🎉 Transformation completed successfully!");
       } else if (data.error) {
         this.resetStartButton();
+        this.hideAllSubsteps();
         alert("❌ Transformation failed: " + data.error);
       } else {
         // Continue polling
@@ -366,7 +368,7 @@ class AudiobookConverter {
     this.progressText.textContent = Math.round(progress) + "%";
   }
 
-  updateSteps(currentStep) {
+  updateSteps(currentStep, currentStepProcess) {
     const steps = [
       "step-ocr",
       "step-combine",
@@ -374,6 +376,15 @@ class AudiobookConverter {
       "step-translate",
       "step-tts",
       "step-complete",
+    ];
+
+    const substepIds = [
+      "ocr",
+      "combine",
+      "clean",
+      "translate",
+      "tts",
+      "complete",
     ];
 
     // Check if translation step is visible
@@ -390,10 +401,22 @@ class AudiobookConverter {
 
       if (index < currentStep) {
         this.updateStepStatus(stepId, "completed", "✅");
+        this.hideSubstep(substepIds[index]);
       } else if (index === currentStep) {
         this.updateStepStatus(stepId, "active", "🔄");
+        // Update substep progress for current step
+        if (currentStepProcess && currentStepProcess.totalItems > 0) {
+          this.updateSubstepProgress(
+            substepIds[index],
+            currentStepProcess.currentItem,
+            currentStepProcess.totalItems
+          );
+        } else {
+          this.hideSubstep(substepIds[index]);
+        }
       } else {
         this.updateStepStatus(stepId, "", "⏳");
+        this.hideSubstep(substepIds[index]);
       }
     });
   }
@@ -402,6 +425,47 @@ class AudiobookConverter {
     const stepElement = document.getElementById(stepId);
     stepElement.className = "step " + className;
     stepElement.querySelector(".step-status").textContent = statusIcon;
+  }
+
+  updateSubstepProgress(substepId, currentItem, totalItems) {
+    const substepElement = document.getElementById(`substep-${substepId}`);
+    const substepFill = document.getElementById(`substep-fill-${substepId}`);
+    const substepText = document.getElementById(`substep-text-${substepId}`);
+
+    if (!substepElement || !substepFill || !substepText) {
+      return;
+    }
+
+    // Show the substep progress
+    substepElement.classList.remove("hidden");
+
+    // Calculate percentage
+    const percentage = totalItems > 0 ? (currentItem / totalItems) * 100 : 0;
+
+    // Update the progress bar
+    substepFill.style.width = percentage + "%";
+
+    // Update the text
+    substepText.textContent = `${currentItem}/${totalItems}`;
+  }
+
+  hideSubstep(substepId) {
+    const substepElement = document.getElementById(`substep-${substepId}`);
+    if (substepElement) {
+      substepElement.classList.add("hidden");
+    }
+  }
+
+  hideAllSubsteps() {
+    const substepIds = [
+      "ocr",
+      "combine",
+      "clean",
+      "translate",
+      "tts",
+      "complete",
+    ];
+    substepIds.forEach((id) => this.hideSubstep(id));
   }
 
   resetStartButton() {

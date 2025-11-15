@@ -48,6 +48,15 @@ async function amalgamateFiles(bookTitle) {
     console.log(` - Found ${textFiles.length} text files to combine`);
     console.log(` - Files order: ${textFiles.join(", ")}`);
 
+    // Send initial progress message
+    console.log(
+      JSON.stringify({
+        type: "STEP_PROGRESS",
+        totalItems: textFiles.length,
+        currentItem: 0,
+      })
+    );
+
     let combinedContent = "";
     let totalCharacters = 0;
 
@@ -58,6 +67,15 @@ async function amalgamateFiles(bookTitle) {
 
       console.log(
         `   - Reading file ${i + 1}/${textFiles.length}: ${textFile}`
+      );
+
+      // Send progress update
+      console.log(
+        JSON.stringify({
+          type: "STEP_PROGRESS",
+          totalItems: textFiles.length,
+          currentItem: i + 1,
+        })
       );
 
       try {

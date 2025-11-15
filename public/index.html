@@ -286,34 +286,88 @@
 
             <div class="progress-steps">
               <div class="step" id="step-ocr">
-                <span class="step-icon">📖</span>
-                <span class="step-text">OCR Processing</span>
-                <span class="step-status">⏳</span>
+                <div class="step-header">
+                  <span class="step-icon">📖</span>
+                  <span class="step-text">OCR Processing</span>
+                  <span class="step-status">⏳</span>
+                </div>
+                <div class="substep-progress hidden" id="substep-ocr">
+                  <div class="substep-bar">
+                    <div class="substep-fill" id="substep-fill-ocr"></div>
+                  </div>
+                  <span class="substep-text" id="substep-text-ocr">0/0</span>
+                </div>
               </div>
               <div class="step" id="step-combine">
-                <span class="step-icon">📚</span>
-                <span class="step-text">Text Combination</span>
-                <span class="step-status">⏳</span>
+                <div class="step-header">
+                  <span class="step-icon">📚</span>
+                  <span class="step-text">Text Combination</span>
+                  <span class="step-status">⏳</span>
+                </div>
+                <div class="substep-progress hidden" id="substep-combine">
+                  <div class="substep-bar">
+                    <div class="substep-fill" id="substep-fill-combine"></div>
+                  </div>
+                  <span class="substep-text" id="substep-text-combine"
+                    >0/0</span
+                  >
+                </div>
               </div>
               <div class="step" id="step-clean">
-                <span class="step-icon">🧹</span>
-                <span class="step-text">AI Cleaning</span>
-                <span class="step-status">⏳</span>
+                <div class="step-header">
+                  <span class="step-icon">🧹</span>
+                  <span class="step-text">AI Cleaning</span>
+                  <span class="step-status">⏳</span>
+                </div>
+                <div class="substep-progress hidden" id="substep-clean">
+                  <div class="substep-bar">
+                    <div class="substep-fill" id="substep-fill-clean"></div>
+                  </div>
+                  <span class="substep-text" id="substep-text-clean">0/0</span>
+                </div>
               </div>
               <div class="step hidden" id="step-translate">
-                <span class="step-icon">🌍</span>
-                <span class="step-text">Translation</span>
-                <span class="step-status">⏳</span>
+                <div class="step-header">
+                  <span class="step-icon">🌍</span>
+                  <span class="step-text">Translation</span>
+                  <span class="step-status">⏳</span>
+                </div>
+                <div class="substep-progress hidden" id="substep-translate">
+                  <div class="substep-bar">
+                    <div class="substep-fill" id="substep-fill-translate"></div>
+                  </div>
+                  <span class="substep-text" id="substep-text-translate"
+                    >0/0</span
+                  >
+                </div>
               </div>
               <div class="step" id="step-tts">
-                <span class="step-icon">🎤</span>
-                <span class="step-text">Text-to-Speech</span>
-                <span class="step-status">⏳</span>
+                <div class="step-header">
+                  <span class="step-icon">🎤</span>
+                  <span class="step-text">Text-to-Speech</span>
+                  <span class="step-status">⏳</span>
+                </div>
+                <div class="substep-progress hidden" id="substep-tts">
+                  <div class="substep-bar">
+                    <div class="substep-fill" id="substep-fill-tts"></div>
+                  </div>
+                  <span class="substep-text" id="substep-text-tts">0/0</span>
+                </div>
               </div>
               <div class="step" id="step-complete">
-                <span class="step-icon">🎉</span>
-                <span class="step-text">Complete</span>
-                <span class="step-status">⏳</span>
+                <div class="step-header">
+                  <span class="step-icon">🎉</span>
+                  <span class="step-text">Complete</span>
+                  <span class="step-status">⏳</span>
+                </div>
+                <div class="substep-progress hidden" id="substep-complete">
+                  <div class="substep-bar">
+                    <div class="substep-fill" id="substep-fill-complete"></div>
+                  </div>
+                  <span class="substep-text" id="substep-text-complete"
+                    >0/0</span
+                  >
+                </div>
               </div>
             </div>
           </div>

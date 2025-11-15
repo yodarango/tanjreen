@@ -23,6 +23,15 @@ export async function concatenateAudioFiles(bookTitle, language) {
 
     console.log(` - Running concat.sh with title: ${sanitizedTitle}`);
 
+    // Send initial progress message (concatenation is a single operation)
+    console.log(
+      JSON.stringify({
+        type: "STEP_PROGRESS",
+        totalItems: 1,
+        currentItem: 0,
+      })
+    );
+
     const concatProcess = spawn("bash", [scriptPath, sanitizedTitle], {
       stdio: ["pipe", "pipe", "pipe"],
       cwd: process.cwd(),
@@ -41,6 +50,14 @@ export async function concatenateAudioFiles(bookTitle, language) {
 
     concatProcess.on("close", (code) => {
       if (code === 0) {
+        // Send completion progress message
+        console.log(
+          JSON.stringify({
+            type: "STEP_PROGRESS",
+            totalItems: 1,
+            currentItem: 1,
+          })
+        );
         console.log(" ✔ Audio concatenation completed successfully");
         resolve();
       } else {

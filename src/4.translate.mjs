@@ -49,6 +49,15 @@ async function translateText(text, language) {
     const chunks = splitTextIntoChunks(text, 3000);
     console.log(` - Split text into ${chunks.length} chunk(s) for translation`);
 
+    // Send initial progress message
+    console.log(
+      JSON.stringify({
+        type: "STEP_PROGRESS",
+        totalItems: chunks.length,
+        currentItem: 0,
+      })
+    );
+
     const translations = [];
 
     for (let i = 0; i < chunks.length; i++) {
@@ -59,6 +68,15 @@ async function translateText(text, language) {
         `   - Translating chunk ${i + 1}/${chunks.length} (${
           chunk.length
         } chars)`
+      );
+
+      // Send progress update
+      console.log(
+        JSON.stringify({
+          type: "STEP_PROGRESS",
+          totalItems: chunks.length,
+          currentItem: i + 1,
+        })
       );
 
       const response = await openai.chat.completions.create({

@@ -102,6 +102,10 @@ let transformationState = {
   currentStep: 0,
   progress: 0,
   error: null,
+  currentStepProcess: {
+    totalItems: 0,
+    currentItem: 0,
+  },
 };
 
 // API Routes
@@ -266,6 +270,10 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
       currentStep: 0,
       progress: 0,
       error: null,
+      currentStepProcess: {
+        totalItems: 0,
+        currentItem: 0,
+      },
     };
 
     // Clean the working directory BEFORE starting the process
@@ -336,6 +344,23 @@ function startTransformationProcess(language) {
     const lines = output.split("\n").filter((line) => line.trim());
 
     lines.forEach((line) => {
+      // Try to parse JSON messages for sub-step progress
+      if (line.trim().startsWith("{") && line.trim().endsWith("}")) {
+        try {
+          const jsonMessage = JSON.parse(line);
+
+          // Update sub-step progress if message contains the right structure
+          if (jsonMessage.type === "STEP_PROGRESS") {
+            transformationState.currentStepProcess = {
+              totalItems: jsonMessage.totalItems || 0,
+              currentItem: jsonMessage.currentItem || 0,
+            };
+          }
+        } catch (e) {
+          // Not a valid JSON, continue with normal processing
+        }
+      }
+
       // Check for step progression
       stepKeywords.forEach((keyword, index) => {
         if (line.includes(keyword)) {
@@ -343,6 +368,12 @@ function startTransformationProcess(language) {
           transformationState.currentStep = currentStep;
           transformationState.progress =
             (currentStep / stepKeywords.length) * 100;
+
+          // Reset sub-step progress when moving to a new step
+          transformationState.currentStepProcess = {
+            totalItems: 0,
+            currentItem: 0,
+          };
         }
       });
     });

@@ -586,8 +586,8 @@ input.danger:focus {
 
 .step {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   padding: 10px;
   background: var(--dr-gamma);
   border-radius: 8px;
@@ -606,6 +606,12 @@ input.danger:focus {
   border-left: 4px solid var(--dr-success);
 }
 
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .step-icon {
   font-size: 18px;
 }
@@ -618,6 +624,41 @@ input.danger:focus {
 
 .step-status {
   font-size: 16px;
+}
+
+/* Substep progress bar */
+.substep-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 28px;
+  margin-top: 4px;
+}
+
+.substep-progress.hidden {
+  display: none;
+}
+
+.substep-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--dr-beta);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.substep-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--dr-epsilon) 0%, var(--dr-zeta) 100%);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.substep-text {
+  font-size: 0.85rem;
+  color: var(--dr-rho);
+  min-width: 50px;
+  text-align: right;
 }
 
 .loading {

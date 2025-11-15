@@ -172,9 +172,27 @@ async function cleanCompleteText(bookTitle) {
     const chunks = splitTextIntoChunks(completeText);
     console.log(` - Created ${chunks.length} chunks for processing`);
 
+    // Send initial progress message
+    console.log(
+      JSON.stringify({
+        type: "STEP_PROGRESS",
+        totalItems: chunks.length,
+        currentItem: 0,
+      })
+    );
+
     // Clean each chunk
     const cleanedChunks = [];
     for (let i = 0; i < chunks.length; i++) {
+      // Send progress update
+      console.log(
+        JSON.stringify({
+          type: "STEP_PROGRESS",
+          totalItems: chunks.length,
+          currentItem: i + 1,
+        })
+      );
+
       const cleanedChunk = await cleanTextChunk(
         chunks[i],
         bookTitle,

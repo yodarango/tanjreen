@@ -1,12 +1,36 @@
 import tesseract from "node-tesseract-ocr";
 import heicConvert from "heic-convert";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import * as pdfjsLib from "pdfjs-dist";
+import canvas from "canvas";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Configure canvas for pdfjs-dist in Node.js environment
+const NodeCanvasFactory = class {
+  create(width, height) {
+    const canvasInstance = canvas.createCanvas(width, height);
+    return {
+      canvas: canvasInstance,
+      context: canvasInstance.getContext("2d"),
+    };
+  }
+
+  reset(canvasAndContext, width, height) {
+    canvasAndContext.canvas.width = width;
+    canvasAndContext.canvas.height = height;
+  }
+
+  destroy(canvasAndContext) {
+    canvasAndContext.canvas.width = 0;
+    canvasAndContext.canvas.height = 0;
+    canvasAndContext.canvas = null;
+    canvasAndContext.context = null;
+  }
+};
 
 /* ****************************************************************************
  * Convert HEIC file to JPEG format
@@ -41,6 +65,7 @@ async function extractTextFromPDF(pdfPath) {
     const loadingTask = pdfjsLib.getDocument({
       data: uint8Array,
       useSystemFonts: true,
+      canvasFactory: new NodeCanvasFactory(),
     });
 
     const pdfDocument = await loadingTask.promise;
@@ -116,6 +141,15 @@ async function processImagesWithOCR(bookTitle) {
 
     console.log(` - Found ${processableFiles.length} files to process`);
 
+    // Send initial progress message
+    console.log(
+      JSON.stringify({
+        type: "STEP_PROGRESS",
+        totalItems: processableFiles.length,
+        currentItem: 0,
+      })
+    );
+
     // Sort files to ensure consistent ordering
     processableFiles.sort();
 
@@ -129,6 +163,15 @@ async function processImagesWithOCR(bookTitle) {
 
       console.log(
         `   - Processing file ${i + 1}/${processableFiles.length}: ${file}`
+      );
+
+      // Send progress update
+      console.log(
+        JSON.stringify({
+          type: "STEP_PROGRESS",
+          totalItems: processableFiles.length,
+          currentItem: i + 1,
+        })
       );
 
       try {
