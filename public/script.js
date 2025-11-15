@@ -153,7 +153,7 @@ class AudiobookConverter {
       alert(`✅ ${data.message}`);
 
       // Refresh the images count
-      this.checkImages();
+      this.loadImages();
     } catch (error) {
       console.error("Error cleaning pending content:", error);
       alert("❌ Error cleaning pending content: " + error.message);

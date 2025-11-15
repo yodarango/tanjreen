@@ -1,5 +1,6 @@
 import { validateTransformationRequest } from "./src/utils/validate.mjs";
 import { authenticateToken } from "./src/middleware/auth.mjs";
+import { sendCompletionEmail } from "./src/utils/email.mjs";
 import { spawn } from "child_process";
 import jwt from "jsonwebtoken";
 import express from "express";
@@ -98,6 +99,7 @@ let transformationState = {
   isRunning: false,
   completed: false,
   outputPath: null,
+  bookTitle: null,
   messages: [],
   currentStep: 0,
   progress: 0,
@@ -266,6 +268,8 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
     transformationState = {
       completed: false,
       isRunning: true,
+      bookTitle: bookTitle,
+      outputPath: null,
       messages: [],
       currentStep: 0,
       progress: 0,
@@ -392,7 +396,7 @@ function startTransformationProcess(language) {
   });
 
   // on closing alert too.
-  child.on("close", (code) => {
+  child.on("close", async (code) => {
     transformationState.isRunning = false;
 
     if (code === 0) {
@@ -405,12 +409,29 @@ function startTransformationProcess(language) {
         text: "🎉 Transformation completed successfully!",
         type: "success",
       });
+
+      // Send success email notification
+      await sendCompletionEmail(
+        transformationState.bookTitle,
+        transformationState.outputPath,
+        true,
+        null
+      );
     } else {
-      transformationState.error = `Process exited with code ${code}`;
+      const errorMessage = `Process exited with code ${code}`;
+      transformationState.error = errorMessage;
       transformationState.messages.push({
         text: `❌ Process failed with exit code ${code}`,
         type: "error",
       });
+
+      // Send failure email notification
+      await sendCompletionEmail(
+        transformationState.bookTitle,
+        null,
+        false,
+        errorMessage
+      );
     }
   });
 }
