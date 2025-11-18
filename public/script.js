@@ -65,7 +65,8 @@ class AudiobookConverter {
         console.log("🔄 Process in progress detected, resuming polling...");
         this.isProcessing = true;
         this.startBtn.disabled = true;
-        this.startBtn.textContent = "⏳ Processing...";
+        this.startBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
         // Update UI with current state
         this.updateProgress(data.progress);
@@ -156,13 +157,13 @@ class AudiobookConverter {
       }
 
       const data = await response.json();
-      alert(`✅ ${data.message}`);
+      alert(`✓ ${data.message}`);
 
       // Refresh the images count
       this.loadImages();
     } catch (error) {
       console.error("Error cleaning pending content:", error);
-      alert("❌ Error cleaning pending content: " + error.message);
+      alert("✗ Error cleaning pending content: " + error.message);
     }
   }
 
@@ -270,7 +271,7 @@ class AudiobookConverter {
 
       // Complete progress
       this.uploadProgressFill.style.width = "100%";
-      this.uploadProgressText.textContent = `✅ Uploaded ${result.files.length} images successfully!`;
+      this.uploadProgressText.textContent = `✓ Uploaded ${result.files.length} images successfully!`;
 
       // Wait a moment then hide progress and reload images
       setTimeout(() => {
@@ -284,7 +285,7 @@ class AudiobookConverter {
     } catch (error) {
       console.error("Upload error:", error);
       this.uploadProgressText.textContent =
-        "❌ Upload failed. Please try again.";
+        "✗ Upload failed. Please try again.";
       this.uploadProgressFill.style.width = "0%";
 
       setTimeout(() => {
@@ -316,17 +317,20 @@ class AudiobookConverter {
 
   async playVoiceSample() {
     try {
-      this.playVoiceSampleBtn.textContent = "🔄 Loading...";
+      this.playVoiceSampleBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Loading...';
       this.playVoiceSampleBtn.disabled = true;
 
       console.log(this.voiceSamplePlayer);
       await this.voiceSamplePlayer.play();
 
-      this.playVoiceSampleBtn.textContent = "🔊 Play Sample";
+      this.playVoiceSampleBtn.innerHTML =
+        '<i class="fas fa-volume-up"></i> Play Sample';
       this.playVoiceSampleBtn.disabled = false;
     } catch (error) {
       console.error("Error playing voice sample:", error);
-      this.playVoiceSampleBtn.textContent = "🔊 Play Sample";
+      this.playVoiceSampleBtn.innerHTML =
+        '<i class="fas fa-volume-up"></i> Play Sample';
       this.playVoiceSampleBtn.disabled = false;
     }
   }
@@ -379,7 +383,8 @@ class AudiobookConverter {
 
     this.isProcessing = true;
     this.startBtn.disabled = true;
-    this.startBtn.textContent = "🔄 Processing...";
+    this.startBtn.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
     try {
       // Start the transformation process
@@ -421,13 +426,17 @@ class AudiobookConverter {
 
       if (data.completed) {
         this.resetStartButton();
-        this.updateStepStatus("step-complete", "completed", "✅");
+        this.updateStepStatus(
+          "step-complete",
+          "completed",
+          '<i class="fas fa-check-circle"></i>'
+        );
         this.hideAllSubsteps();
-        alert("🎉 Transformation completed successfully!");
+        alert("Transformation completed successfully!");
       } else if (data.error) {
         this.resetStartButton();
         this.hideAllSubsteps();
-        alert("❌ Transformation failed: " + data.error);
+        alert("✗ Transformation failed: " + data.error);
       } else {
         // Continue polling
         setTimeout(() => this.pollProgress(), 1000);
@@ -475,10 +484,18 @@ class AudiobookConverter {
       }
 
       if (index < currentStep) {
-        this.updateStepStatus(stepId, "completed", "✅");
+        this.updateStepStatus(
+          stepId,
+          "completed",
+          '<i class="fas fa-check-circle"></i>'
+        );
         this.hideSubstep(substepIds[index]);
       } else if (index === currentStep) {
-        this.updateStepStatus(stepId, "active", "🔄");
+        this.updateStepStatus(
+          stepId,
+          "active",
+          '<i class="fas fa-spinner fa-spin"></i>'
+        );
         // Update substep progress for current step
         if (currentStepProcess && currentStepProcess.totalItems > 0) {
           this.updateSubstepProgress(
@@ -490,7 +507,11 @@ class AudiobookConverter {
           this.hideSubstep(substepIds[index]);
         }
       } else {
-        this.updateStepStatus(stepId, "", "⏳");
+        this.updateStepStatus(
+          stepId,
+          "",
+          '<i class="fas fa-hourglass-half"></i>'
+        );
         this.hideSubstep(substepIds[index]);
       }
     });
@@ -499,7 +520,7 @@ class AudiobookConverter {
   updateStepStatus(stepId, className, statusIcon) {
     const stepElement = document.getElementById(stepId);
     stepElement.className = "step " + className;
-    stepElement.querySelector(".step-status").textContent = statusIcon;
+    stepElement.querySelector(".step-status").innerHTML = statusIcon;
   }
 
   updateSubstepProgress(substepId, currentItem, totalItems) {
@@ -546,7 +567,8 @@ class AudiobookConverter {
   resetStartButton() {
     this.isProcessing = false;
     this.startBtn.disabled = false;
-    this.startBtn.textContent = "🚀 Start Transformation";
+    this.startBtn.innerHTML =
+      '<i class="fas fa-rocket"></i> Start Transformation';
   }
 }
 
