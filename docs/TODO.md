@@ -1,4 +1,3 @@
 ### Ho fermatto qui
 
-- Aggiungere barra di processo anche per ogni paso singoolare oltre del processo globale
-- controlla le voce, sembra che una sia discontinuata
+- Assicurarmi che tutti i eventi di tangereen siano scambiati per tanjreen
