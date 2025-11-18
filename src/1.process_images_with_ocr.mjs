@@ -1,36 +1,16 @@
 import tesseract from "node-tesseract-ocr";
 import heicConvert from "heic-convert";
-import * as pdfjsLib from "pdfjs-dist";
-import canvas from "canvas";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
-// Configure canvas for pdfjs-dist in Node.js environment
-const NodeCanvasFactory = class {
-  create(width, height) {
-    const canvasInstance = canvas.createCanvas(width, height);
-    return {
-      canvas: canvasInstance,
-      context: canvasInstance.getContext("2d"),
-    };
-  }
-
-  reset(canvasAndContext, width, height) {
-    canvasAndContext.canvas.width = width;
-    canvasAndContext.canvas.height = height;
-  }
-
-  destroy(canvasAndContext) {
-    canvasAndContext.canvas.width = 0;
-    canvasAndContext.canvas.height = 0;
-    canvasAndContext.canvas = null;
-    canvasAndContext.context = null;
-  }
-};
+// Import pdf-parse using require (CommonJS module)
+const pdfParse = require("pdf-parse");
 
 /* ****************************************************************************
  * Convert HEIC file to JPEG format
@@ -53,35 +33,14 @@ async function convertHeicToJpeg(heicPath, outputPath) {
 }
 
 /* ****************************************************************************
- * Extract text from PDF file using pdfjs-dist
+ * Extract text from PDF file using pdf-parse
  * ****************************************************************************
  */
 async function extractTextFromPDF(pdfPath) {
   try {
     const dataBuffer = fs.readFileSync(pdfPath);
-    const uint8Array = new Uint8Array(dataBuffer);
-
-    // Load the PDF document
-    const loadingTask = pdfjsLib.getDocument({
-      data: uint8Array,
-      useSystemFonts: true,
-      canvasFactory: new NodeCanvasFactory(),
-    });
-
-    const pdfDocument = await loadingTask.promise;
-    const numPages = pdfDocument.numPages;
-
-    let fullText = "";
-
-    // Extract text from each page
-    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-      const page = await pdfDocument.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item) => item.str).join(" ");
-      fullText += pageText + "\n\n";
-    }
-
-    return fullText.trim();
+    const data = await pdfParse(dataBuffer);
+    return data.text.trim();
   } catch (error) {
     throw new Error(` ❌ Failed to extract text from PDF: ${error.message}`);
   }
