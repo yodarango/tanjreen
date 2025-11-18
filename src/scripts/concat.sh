@@ -38,4 +38,5 @@ output_dir="./src/content/3.done/$filename"
 mkdir -p "$output_dir"
 
 # Run FFmpeg to concatenate the MP3 files and compress the audio to 128 kbps bitrate
-ffmpeg -i "concat:$files" -b:a 128k "$output_dir/$filename.mp3"
+# -y flag automatically overwrites existing files without prompting
+ffmpeg -y -i "concat:$files" -b:a 128k "$output_dir/$filename.mp3"
