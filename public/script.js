@@ -157,7 +157,6 @@ class AudiobookConverter {
       }
 
       const data = await response.json();
-      alert(`✓ ${data.message}`);
 
       // Refresh the images count
       this.loadImages();
