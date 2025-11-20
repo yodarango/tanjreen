@@ -229,6 +229,22 @@ class AudiobookConverter {
       return;
     }
 
+    // Extract filename from first file and populate title input
+    if (validFiles.length > 0 && !this.bookTitleInput.value.trim()) {
+      const firstFile = validFiles[0];
+      // Remove file extension
+      let nameWithoutExt = firstFile.name.replace(/\.[^/.]+$/, "");
+      // Remove all text after __ (double underscore)
+      const doubleUnderscoreIndex = nameWithoutExt.indexOf("__");
+      if (doubleUnderscoreIndex !== -1) {
+        nameWithoutExt = nameWithoutExt.substring(0, doubleUnderscoreIndex);
+      }
+      // Replace dashes and underscores with spaces
+      const formattedTitle = nameWithoutExt.replace(/[-_]/g, " ");
+      // Set the title input value
+      this.bookTitleInput.value = formattedTitle;
+    }
+
     // Show upload progress
     this.uploadProgress.classList.remove("hidden");
     this.dropZone.querySelector(".drop-zone-content").classList.add("hidden");
