@@ -475,6 +475,7 @@ class AudiobookConverter {
       "step-clean",
       "step-translate",
       "step-tts",
+      "step-transfer",
       "step-complete",
     ];
 
@@ -484,6 +485,7 @@ class AudiobookConverter {
       "clean",
       "translate",
       "tts",
+      "transfer",
       "complete",
     ];
 

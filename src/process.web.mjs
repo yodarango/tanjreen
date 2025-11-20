@@ -3,6 +3,7 @@ import { concatenateAudioFiles } from "./6.concatenate_audio.mjs";
 import { amalgamateFiles } from "./2.amalgamate_text_files.mjs";
 import { processTextToSpeech } from "./5.process_tts.mjs";
 import { cleanCompleteText } from "./3.sanitize_text.mjs";
+import { transferFile } from "./7.transfer_file.mjs";
 import { translate } from "./4.translate.mjs";
 import fs from "fs";
 import {
@@ -12,6 +13,7 @@ import {
   logOne,
   logTwo,
   logSix,
+  logSeven,
 } from "./utils/log_steps.mjs";
 
 // Load environment variables
@@ -50,6 +52,9 @@ async function startProcess() {
 
   // Step 6: Concatenate audio files
   await logSix(concatenateAudioFiles, bookTitle, language);
+
+  // Step 7: Transfer file to destination (production only)
+  await logSeven(transferFile, bookTitle, language);
 }
 
 // Run the main function

@@ -93,3 +93,18 @@ export async function logSix(step, bookTitle, language) {
     throw error;
   }
 }
+
+export async function logSeven(step, bookTitle, language) {
+  try {
+    console.log(
+      "*****************************************************************************\n" +
+        "📤 Step 7: Transferring file to destination...\n" +
+        "*****************************************************************************\n\n"
+    );
+    await step(bookTitle, language);
+    console.log(` ✅ Step 7: File transfer completed! \n\n\n`);
+  } catch (error) {
+    console.error(` ❌ Step 7 failed:`, error);
+    throw error;
+  }
+}

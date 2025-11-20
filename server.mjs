@@ -134,12 +134,11 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    // Generate JWT token
+    // Generate JWT token (no expiration)
     const jwtSecret = process.env.JWT_SECRET || "your-secret-key-change-this";
     const token = jwt.sign(
       { authenticated: true, timestamp: Date.now() },
-      jwtSecret,
-      { expiresIn: "24h" }
+      jwtSecret
     );
 
     res.json({
@@ -495,10 +494,11 @@ function startTransformationProcess(language) {
     "Step 4",
     "Step 5",
     "Step 6",
+    "Step 7",
   ];
 
   // Calculate total steps (skip Step 4 if no translation)
-  const totalSteps = language ? 6 : 5;
+  const totalSteps = language ? 7 : 6;
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
