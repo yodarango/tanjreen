@@ -548,6 +548,27 @@ function startTransformationProcess(language) {
   child.stderr.on("data", (data) => {
     const error = data.toString();
     console.error(error);
+
+    // Try to parse JSON error messages
+    try {
+      const lines = error.split("\n").filter((line) => line.trim());
+      lines.forEach((line) => {
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.type === "ERROR") {
+            transformationState.error = parsed.message;
+            transformationState.messages.push({
+              text: parsed.message,
+              type: "error",
+            });
+          }
+        } catch (e) {
+          // Not JSON, just log it
+        }
+      });
+    } catch (e) {
+      // Ignore parsing errors
+    }
   });
 
   // another potential for failure

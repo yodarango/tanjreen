@@ -15,18 +15,30 @@ export async function transferFile(bookTitle, language) {
     try {
       // Check if we're in production mode
       const isProduction = process.env.NODE_ENV === "production";
-      
+
       if (!isProduction) {
         console.log(" ℹ️  Skipping file transfer (not in production mode)");
+        console.log(
+          JSON.stringify({
+            type: "INFO",
+            message: "File transfer skipped (not in production mode)",
+          })
+        );
         resolve();
         return;
       }
 
       // Get the transfer destination path from environment
       const transferPath = process.env.TRANSFER_TO_PATH;
-      
+
       if (!transferPath) {
         console.log(" ⚠️  TRANSFER_TO_PATH not set, skipping file transfer");
+        console.log(
+          JSON.stringify({
+            type: "INFO",
+            message: "File transfer skipped (TRANSFER_TO_PATH not configured)",
+          })
+        );
         resolve();
         return;
       }
@@ -48,8 +60,15 @@ export async function transferFile(bookTitle, language) {
 
       // Check if source file exists
       if (!fs.existsSync(sourceFile)) {
-        console.log(` ❌ Source file not found: ${sourceFile}`);
-        reject(new Error(`Source file not found: ${sourceFile}`));
+        const errorMsg = `Source file not found: ${sourceFile}`;
+        console.log(` ❌ ${errorMsg}`);
+        console.error(
+          JSON.stringify({
+            type: "ERROR",
+            message: `File transfer failed: ${errorMsg}`,
+          })
+        );
+        reject(new Error(errorMsg));
         return;
       }
 
@@ -74,16 +93,33 @@ export async function transferFile(bookTitle, language) {
       );
 
       // Copy the file to the destination
-      fs.copyFileSync(sourceFile, destFile);
+      try {
+        fs.copyFileSync(sourceFile, destFile);
 
-      // Send completion progress message
-      console.log(
-        JSON.stringify({
-          type: "STEP_PROGRESS",
-          totalItems: 1,
-          currentItem: 1,
-        })
-      );
+        // Send completion progress message
+        console.log(
+          JSON.stringify({
+            type: "STEP_PROGRESS",
+            totalItems: 1,
+            currentItem: 1,
+          })
+        );
+
+        console.log(
+          JSON.stringify({
+            type: "INFO",
+            message: `✓ File successfully transferred to: ${destFile}`,
+          })
+        );
+      } catch (copyError) {
+        console.error(
+          JSON.stringify({
+            type: "ERROR",
+            message: `Failed to transfer file to ${transferPath}: ${copyError.message}`,
+          })
+        );
+        throw copyError;
+      }
 
       console.log(` ✔ File transferred successfully to: ${destFile}`);
       resolve();
@@ -93,4 +129,3 @@ export async function transferFile(bookTitle, language) {
     }
   });
 }
-
