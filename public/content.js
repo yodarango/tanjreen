@@ -184,7 +184,9 @@ class ContentLibrary {
     const downloadBtn = card.querySelector(".download-btn");
     const deleteBtn = card.querySelector(".delete-btn");
 
-    downloadBtn.addEventListener("click", () => this.downloadItem(item.name));
+    downloadBtn.addEventListener("click", () =>
+      this.downloadItem(item.name, downloadBtn)
+    );
     deleteBtn.addEventListener("click", () => this.deleteItem(item.name, card));
 
     return card;
@@ -236,46 +238,44 @@ class ContentLibrary {
     return div.innerHTML;
   }
 
-  async downloadItem(filename) {
+  async downloadItem(filename, buttonElement) {
+    // Store original button content
+    const originalContent = buttonElement.innerHTML;
+
     try {
-      const response = await fetch(
-        `/api/content/download/${encodeURIComponent(filename)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-          },
-        }
-      );
+      // Disable button and show loading state
+      buttonElement.disabled = true;
+      buttonElement.innerHTML = `
+        <span class="spinner"></span>
+        Loading...
+      `;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // Use direct link with token in query parameter for progressive download
+      // This allows the browser to show native download progress
+      const downloadUrl = `/api/content/download/${encodeURIComponent(
+        filename
+      )}?token=${encodeURIComponent(this.authToken)}`;
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Create a temporary link and trigger download
       const a = document.createElement("a");
-      a.href = url;
-
-      // Get filename from Content-Disposition header or use original
-      const contentDisposition = response.headers.get("Content-Disposition");
-      let downloadFilename = filename;
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(
-          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
-        );
-        if (filenameMatch && filenameMatch[1]) {
-          downloadFilename = filenameMatch[1].replace(/['"]/g, "");
-        }
-      }
-
-      a.download = downloadFilename;
+      a.href = downloadUrl;
+      a.style.display = "none";
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+
+      // Small delay before restoring button to show loading state briefly
+      setTimeout(() => {
+        document.body.removeChild(a);
+        // Restore button state
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalContent;
+      }, 500);
     } catch (error) {
       console.error("Error downloading item:", error);
       alert("❌ Error downloading: " + error.message);
+      // Restore button state on error
+      buttonElement.disabled = false;
+      buttonElement.innerHTML = originalContent;
     }
   }
 

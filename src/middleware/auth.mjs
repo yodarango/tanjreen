@@ -5,11 +5,16 @@ dotenv.config();
 
 /**
  * Middleware to verify JWT token
- * Checks for token in Authorization header (Bearer token)
+ * Checks for token in Authorization header (Bearer token) or query parameter
  */
 export function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  let token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  // If no token in header, check query parameter (for direct download links)
+  if (!token && req.query.token) {
+    token = req.query.token;
+  }
 
   if (!token) {
     return res.status(401).json({ error: "Access denied. No token provided." });
@@ -24,4 +29,3 @@ export function authenticateToken(req, res, next) {
     return res.status(403).json({ error: "Invalid or expired token." });
   }
 }
-
