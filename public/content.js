@@ -260,9 +260,11 @@ class ContentLibrary {
       const contentDisposition = response.headers.get("Content-Disposition");
       let downloadFilename = filename;
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-        if (filenameMatch) {
-          downloadFilename = filenameMatch[1];
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          downloadFilename = filenameMatch[1].replace(/['"]/g, "");
         }
       }
 

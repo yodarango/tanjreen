@@ -410,6 +410,7 @@ app.get("/api/content/download/:filename", authenticateToken, (req, res) => {
       // Set response headers
       res.attachment(`${filename}.zip`);
       res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
 
       // Pipe archive to response
       archive.pipe(res);
