@@ -16,17 +16,18 @@ export async function transferFile(bookTitle, language) {
       // Check if we're in production mode
       const isProduction = process.env.NODE_ENV === "production";
 
-      if (!isProduction) {
-        console.log(" ℹ️  Skipping file transfer (not in production mode)");
-        console.log(
-          JSON.stringify({
-            type: "INFO",
-            message: "File transfer skipped (not in production mode)",
-          })
-        );
-        resolve();
-        return;
-      }
+      // Skip file transfer if not in production mode for now until I know if this is really what I want to do
+      // if (!isProduction) {
+      console.log(" ℹ️  Skipping file transfer (not in production mode)");
+      console.log(
+        JSON.stringify({
+          type: "INFO",
+          message: "File transfer skipped (not in production mode)",
+        })
+      );
+      resolve();
+      return;
+      // }
 
       // Get the transfer destination path from environment
       const transferPath = process.env.TRANSFER_TO_PATH;
