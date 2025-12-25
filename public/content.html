@@ -1,9 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Character Encoding -->
     <meta charset="UTF-8" />
+
+    <!-- Viewport for Responsive Design -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- IE Compatibility -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Primary Meta Tags -->
     <title>Content Library - Tangerin 🍊</title>
+    <meta name="title" content="Content Library - Tangerin 🍊" />
+    <meta
+      name="description"
+      content="Access your completed audiobooks in the Tangerin Content Library. Listen to your converted text-to-speech audiobooks anytime."
+    />
+    <meta
+      name="keywords"
+      content="audiobooks, content library, text to speech, TTS, audiobook converter, Tangerin"
+    />
+    <meta name="author" content="Tangerin" />
+    <meta name="application-name" content="Tangerin" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#ff6b35" />
+    <meta name="msapplication-TileColor" content="#ff6b35" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tangerin.app/content" />
+    <meta property="og:title" content="Content Library - Tangerin 🍊" />
+    <meta
+      property="og:description"
+      content="Access your completed audiobooks in the Tangerin Content Library. Listen to your converted text-to-speech audiobooks anytime."
+    />
+    <meta property="og:image" content="https://tangerin.app/og-image.png" />
+    <meta property="og:site_name" content="Tangerin" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://tangerin.app/content" />
+    <meta name="twitter:title" content="Content Library - Tangerin 🍊" />
+    <meta
+      name="twitter:description"
+      content="Access your completed audiobooks in the Tangerin Content Library. Listen to your converted text-to-speech audiobooks anytime."
+    />
+    <meta
+      name="twitter:image"
+      content="https://tangerin.app/twitter-image.png"
+    />
+
+    <!-- Security -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' data: https://cdnjs.cloudflare.com; connect-src 'self' https://api.tangerin.app;"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Robots -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="googlebot" content="noindex, nofollow" />
+
+    <!-- Apple iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Tangerin" />
+
+    <!-- Format Detection -->
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="content.css" />
   </head>
@@ -11,12 +100,16 @@
     <div class="container">
       <header class="header">
         <div class="header-left">
-          <h1>📚 Content Library</h1>
+          <h1><i class="fas fa-book"></i> Content Library</h1>
           <p class="subtitle">Your completed audiobooks</p>
         </div>
         <div class="header-actions">
-          <button id="backBtn" class="back-btn">← Back to Converter</button>
-          <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+          <button id="backBtn" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Converter
+          </button>
+          <button id="logoutBtn" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
         </div>
       </header>
 
@@ -29,11 +122,13 @@
 
         <!-- Empty State -->
         <div id="emptyState" class="empty-state hidden">
-          <div class="empty-icon">📭</div>
+          <div class="empty-icon">
+            <i class="fas fa-inbox"></i>
+          </div>
           <h2>No audiobooks yet</h2>
           <p>Your completed audiobooks will appear here.</p>
           <button id="goToConverterBtn" class="primary-btn">
-            Start Converting
+            <i class="fas fa-play"></i> Start Converting
           </button>
         </div>
 
@@ -44,15 +139,73 @@
 
         <!-- Error State -->
         <div id="errorState" class="error-state hidden">
-          <div class="error-icon">⚠️</div>
+          <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
           <h2>Error loading content</h2>
           <p id="errorMessage">Something went wrong. Please try again.</p>
-          <button id="retryBtn" class="primary-btn">Retry</button>
+          <button id="retryBtn" class="primary-btn">
+            <i class="fas fa-redo"></i> Retry
+          </button>
         </div>
       </main>
     </div>
 
+    <!-- Templates -->
+    <template id="contentCardTemplate">
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="content-icon" data-icon-container></div>
+          <div class="content-info">
+            <h3 class="content-title" data-title></h3>
+            <div class="content-meta">
+              <div class="content-meta-item">
+                <span><i class="fas fa-box"></i></span>
+                <span data-size></span>
+              </div>
+              <div class="content-meta-item">
+                <span><i class="fas fa-calendar"></i></span>
+                <span data-date></span>
+              </div>
+              <div class="content-meta-item file-count-item hidden">
+                <span><i class="fas fa-file"></i></span>
+                <span data-file-count></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="content-actions">
+          <button class="download-btn" data-download-btn>
+            <i class="fas fa-download"></i>
+            <span data-download-text>Download</span>
+          </button>
+          <button class="delete-btn" data-delete-btn>
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Icon Templates -->
+    <template id="iconFolder">
+      <i class="fas fa-folder"></i>
+    </template>
+    <template id="iconMusic">
+      <i class="fas fa-music"></i>
+    </template>
+    <template id="iconPdf">
+      <i class="fas fa-file-pdf"></i>
+    </template>
+    <template id="iconText">
+      <i class="fas fa-file-alt"></i>
+    </template>
+    <template id="iconArchive">
+      <i class="fas fa-file-archive"></i>
+    </template>
+    <template id="iconCode">
+      <i class="fas fa-file-code"></i>
+    </template>
+
     <script src="content.js"></script>
   </body>
 </html>
-

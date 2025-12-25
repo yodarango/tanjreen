@@ -76,15 +76,49 @@ export async function processTextToSpeech(voice, bookTitle, language) {
 
     console.log(` - Processing cleaned text (${text.length} characters)`);
 
-    // Split text into chunks if it's too long (OpenAI has a limit)
+    // Split text into chunks at sentence boundaries (periods)
+    // to avoid cutting words mid-way
     const maxLength = 4000;
     const chunks = [];
 
     if (text.length <= maxLength) {
       chunks.push(text);
     } else {
-      for (let j = 0; j < text.length; j += maxLength) {
-        chunks.push(text.substring(j, j + maxLength));
+      let remainingText = text;
+
+      while (remainingText.length > 0) {
+        if (remainingText.length <= maxLength) {
+          // Last chunk
+          chunks.push(remainingText);
+          break;
+        }
+
+        // Find the last period before maxLength
+        let splitPoint = remainingText.lastIndexOf(".", maxLength);
+
+        // If no period found before maxLength, look for other sentence endings
+        if (splitPoint === -1 || splitPoint < maxLength * 0.5) {
+          // Try question mark or exclamation mark
+          const questionMark = remainingText.lastIndexOf("?", maxLength);
+          const exclamationMark = remainingText.lastIndexOf("!", maxLength);
+          splitPoint = Math.max(questionMark, exclamationMark);
+        }
+
+        // If still no sentence ending found, split at last space to avoid breaking words
+        if (splitPoint === -1 || splitPoint < maxLength * 0.5) {
+          splitPoint = remainingText.lastIndexOf(" ", maxLength);
+        }
+
+        // If no space found either, do hard split as last resort
+        if (splitPoint === -1) {
+          splitPoint = maxLength;
+        } else {
+          // Include the period/punctuation in the chunk
+          splitPoint += 1;
+        }
+
+        chunks.push(remainingText.substring(0, splitPoint).trim());
+        remainingText = remainingText.substring(splitPoint).trim();
       }
     }
 

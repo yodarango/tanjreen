@@ -127,62 +127,47 @@ class ContentLibrary {
   }
 
   createContentCard(item) {
-    const card = document.createElement("div");
-    card.className = "content-card";
+    // Clone the template
+    const template = document.getElementById("contentCardTemplate");
+    const card = template.content
+      .cloneNode(true)
+      .querySelector(".content-card");
 
-    const icon = item.type === "folder" ? "📁" : this.getFileIcon(item.name);
-    const formattedSize = this.formatFileSize(item.size);
-    const formattedDate = this.formatDate(item.createdAt);
+    // Get icon element
+    const iconContainer = card.querySelector("[data-icon-container]");
+    const iconElement = this.getFileIconElement(
+      item.type === "folder" ? "folder" : item.name
+    );
+    iconContainer.appendChild(iconElement);
 
-    // Build metadata HTML
-    let metaHTML = `
-      <div class="content-meta-item">
-        <span>📦</span>
-        <span>${formattedSize}</span>
-      </div>
-      <div class="content-meta-item">
-        <span>📅</span>
-        <span>${formattedDate}</span>
-      </div>
-    `;
+    // Set title
+    card.querySelector("[data-title]").textContent = item.name;
 
-    // Add file count for folders
+    // Set metadata
+    card.querySelector("[data-size]").textContent = this.formatFileSize(
+      item.size
+    );
+    card.querySelector("[data-date]").textContent = this.formatDate(
+      item.createdAt
+    );
+
+    // Handle file count for folders
     if (item.type === "folder" && item.fileCount > 0) {
-      metaHTML += `
-        <div class="content-meta-item">
-          <span>📄</span>
-          <span>${item.fileCount} file${item.fileCount !== 1 ? "s" : ""}</span>
-        </div>
-      `;
+      const fileCountItem = card.querySelector(".file-count-item");
+      fileCountItem.classList.remove("hidden");
+      card.querySelector("[data-file-count]").textContent = `${
+        item.fileCount
+      } file${item.fileCount !== 1 ? "s" : ""}`;
     }
 
-    card.innerHTML = `
-      <div class="content-card-header">
-        <div class="content-icon">${icon}</div>
-        <div class="content-info">
-          <h3 class="content-title">${this.escapeHtml(item.name)}</h3>
-          <div class="content-meta">
-            ${metaHTML}
-          </div>
-        </div>
-      </div>
-      <div class="content-actions">
-        <button class="download-btn" data-filename="${this.escapeHtml(
-          item.name
-        )}">
-          ⬇️ Download${item.type === "folder" ? " ZIP" : ""}
-        </button>
-        <button class="delete-btn" data-filename="${this.escapeHtml(
-          item.name
-        )}">
-          🗑️
-        </button>
-      </div>
-    `;
+    // Set download button text
+    const downloadText = card.querySelector("[data-download-text]");
+    downloadText.textContent =
+      item.type === "folder" ? "Download ZIP" : "Download";
 
     // Add event listeners
-    const downloadBtn = card.querySelector(".download-btn");
-    const deleteBtn = card.querySelector(".delete-btn");
+    const downloadBtn = card.querySelector("[data-download-btn]");
+    const deleteBtn = card.querySelector("[data-delete-btn]");
 
     downloadBtn.addEventListener("click", () =>
       this.downloadItem(item.name, downloadBtn)
@@ -192,19 +177,27 @@ class ContentLibrary {
     return card;
   }
 
-  getFileIcon(filename) {
-    const ext = filename.split(".").pop().toLowerCase();
+  getFileIconElement(filename) {
+    const ext =
+      filename === "folder"
+        ? "folder"
+        : filename.split(".").pop().toLowerCase();
+
     const iconMap = {
-      mp3: "🎵",
-      wav: "🎵",
-      m4a: "🎵",
-      ogg: "🎵",
-      pdf: "📄",
-      txt: "📝",
-      zip: "📦",
-      json: "📋",
+      folder: "iconFolder",
+      mp3: "iconMusic",
+      wav: "iconMusic",
+      m4a: "iconMusic",
+      ogg: "iconMusic",
+      pdf: "iconPdf",
+      txt: "iconText",
+      zip: "iconArchive",
+      json: "iconCode",
     };
-    return iconMap[ext] || "📁";
+
+    const templateId = iconMap[ext] || "iconFolder";
+    const template = document.getElementById(templateId);
+    return template.content.cloneNode(true);
   }
 
   formatFileSize(bytes) {
@@ -272,7 +265,7 @@ class ContentLibrary {
       }, 500);
     } catch (error) {
       console.error("Error downloading item:", error);
-      alert("❌ Error downloading: " + error.message);
+      alert("Error downloading: " + error.message);
       // Restore button state on error
       buttonElement.disabled = false;
       buttonElement.innerHTML = originalContent;
@@ -282,7 +275,7 @@ class ContentLibrary {
   async deleteItem(filename, cardElement) {
     if (
       !confirm(
-        `⚠️ Are you sure you want to delete "${filename}"? This action cannot be undone.`
+        `Are you sure you want to delete "${filename}"? This action cannot be undone.`
       )
     ) {
       return;
@@ -316,10 +309,10 @@ class ContentLibrary {
         }
       }, 300);
 
-      console.log(`✅ ${data.message}`);
+      console.log(`${data.message}`);
     } catch (error) {
       console.error("Error deleting item:", error);
-      alert("❌ Error deleting: " + error.message);
+      alert("Error deleting: " + error.message);
     }
   }
 }

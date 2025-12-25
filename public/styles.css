@@ -182,13 +182,6 @@ header p {
   transition: all 0.3s ease;
 }
 
-.view-content-btn:hover {
-  background: var(--dr-gamma);
-  box-shadow: 0 0 0.2rem var(--dr-beta), -0.2rem 0 0.8rem var(--dr-beta),
-    0.2rem 0 0.8rem var(--dr-beta);
-  transform: scale(0.95);
-}
-
 .clean-pending-btn {
   color: var(--dr-warning);
   background: transparent;
@@ -202,12 +195,6 @@ header p {
   transition: all 0.3s ease;
 }
 
-.clean-pending-btn:hover {
-  box-shadow: 0 0 0.2rem var(--dr-warning), -0.2rem 0 1rem var(--dr-warning),
-    0.2rem 0 1rem var(--dr-warning);
-  transform: scale(0.95);
-}
-
 .logout-btn {
   color: var(--dr-danger);
   background: transparent;
@@ -219,12 +206,6 @@ header p {
   font-family: var(--dr-font-primary);
   font-weight: 600;
   transition: all 0.3s ease;
-}
-
-.logout-btn:hover {
-  box-shadow: 0 0 0.2rem var(--dr-danger), -0.2rem 0 1rem var(--dr-danger),
-    0.2rem 0 1rem var(--dr-danger);
-  transform: scale(0.95);
 }
 
 .main-content {

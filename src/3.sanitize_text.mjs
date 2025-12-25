@@ -61,8 +61,9 @@ async function cleanTextChunk(textChunk, bookTitle, chunkIndex, totalChunks) {
   If there are snetneces that do not make sense due to lack of words or gramatical errors thereof, attempt to reconstruct their original meanign based on the context. 
   If you cannot reconstruct the sentence, then remove it.
   Add punctuation signs when you remove/edit something. Also make sure that the text does not contain orthography errors. 
-  When removing the book title: ${bookTitle} analyze the context to make sure that it is indeed an insertion of the book title that breaks the text flow and not a frase that happens to have the smae words used by the author but is not the title of the book. `;
-
+  When removing the book title: ${bookTitle} analyze the context to make sure that it is indeed an insertion of the book title that breaks the text flow and not a frase that happens to have the smae words used by the author but is not the title of the book. 
+  If the text looks like an MLA, APA, Turabian, Chicago or any other academic reference, remove it. 
+  If the entirety of the text is a list of references, respond with an empty string.`;
   const userPrompt = `Clean the following text with the book title "${bookTitle}":
 
 ${textChunk}`;

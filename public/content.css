@@ -13,14 +13,14 @@
 }
 
 .subtitle {
-  color: var(--dr-beta);
+  color: var(--dr-pi);
   font-size: 0.9rem;
   margin: 0;
 }
 
 .back-btn {
   background: var(--dr-beta);
-  color: var(--dr-alpha);
+  color: var(--dr-pi);
   padding: 10px 20px;
   border: none;
   border-radius: 6px;
@@ -29,11 +29,6 @@
   font-family: var(--dr-font-primary);
   font-weight: 600;
   transition: all 0.3s ease;
-}
-
-.back-btn:hover {
-  background: var(--dr-gamma);
-  transform: translateX(-3px);
 }
 
 /* Loading State */
@@ -161,7 +156,7 @@
 .content-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--dr-alpha);
+  color: var(--dr-pi);
   margin: 0 0 0.5rem 0;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -172,7 +167,7 @@
   flex-direction: column;
   gap: 0.3rem;
   font-size: 0.85rem;
-  color: var(--dr-beta);
+  color: rgba(var(--dr-pi-rgb), 0.5);
 }
 
 .content-meta-item {
@@ -233,9 +228,9 @@
 
 .delete-btn {
   background: transparent;
-  color: #e74c3c;
+  color: var(--dr-lambda);
   padding: 0.75rem 1rem;
-  border: 2px solid #e74c3c;
+  border: 2px solid var(--dr-lambda);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.95rem;
@@ -245,9 +240,9 @@
 }
 
 .delete-btn:hover {
-  background: #e74c3c;
+  background: var(--dr-lambda);
   color: var(--dr-alpha);
-  box-shadow: 0 0 0.3rem #e74c3c;
+  color: var(--dr-pi);
 }
 
 /* Primary Button */
