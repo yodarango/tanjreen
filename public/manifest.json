@@ -10,13 +10,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "Tanjreen_splash.webp",
+      "src": "tanjreen_splash.webp",
       "sizes": "512x512",
       "type": "image/webp",
       "purpose": "any maskable"
     },
     {
-      "src": "Tanjreen_splash.webp",
+      "src": "tanjreen_splash.webp",
       "sizes": "1024x1024",
       "type": "image/webp",
       "purpose": "any"
@@ -25,7 +25,7 @@
   "categories": ["productivity", "utilities", "education"],
   "screenshots": [
     {
-      "src": "Tanjreen_splash.webp",
+      "src": "tanjreen_splash.webp",
       "sizes": "1024x1024",
       "type": "image/webp",
       "form_factor": "wide"
