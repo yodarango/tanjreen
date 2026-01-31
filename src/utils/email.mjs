@@ -21,10 +21,19 @@ const transporter = nodemailer.createTransport({
  * @param {boolean} success - Whether the transformation was successful
  * @param {string} error - Error message if transformation failed
  */
-export async function sendCompletionEmail(bookTitle, outputPath, success = true, error = null) {
+export async function sendCompletionEmail(
+  bookTitle,
+  outputPath,
+  success = true,
+  error = null,
+) {
   try {
     // Skip if email is not configured
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD || !process.env.EMAIL_TO) {
+    if (
+      !process.env.EMAIL_USER ||
+      !process.env.EMAIL_PASSWORD ||
+      !process.env.EMAIL_TO
+    ) {
       console.log("⚠️  Email not configured, skipping notification");
       return;
     }
@@ -49,7 +58,7 @@ export async function sendCompletionEmail(bookTitle, outputPath, success = true,
           
           <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
           <p style="color: #888; font-size: 12px;">
-            This is an automated message from Tangerin Audiobook Converter
+            This is an automated message from Tanjreen Audiobook Converter
           </p>
         </div>
       `
@@ -68,13 +77,13 @@ export async function sendCompletionEmail(bookTitle, outputPath, success = true,
           
           <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
           <p style="color: #888; font-size: 12px;">
-            This is an automated message from Tangerin Audiobook Converter
+            This is an automated message from Tanjreen Audiobook Converter
           </p>
         </div>
       `;
 
     const mailOptions = {
-      from: `"Tangerin 🍊" <${process.env.EMAIL_USER}>`,
+      from: `"Tanjreen 🍊" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_TO,
       subject: subject,
       html: htmlContent,
@@ -88,4 +97,3 @@ export async function sendCompletionEmail(bookTitle, outputPath, success = true,
     // Don't throw error - email failure shouldn't stop the process
   }
 }
-

@@ -1,5 +1,5 @@
 /* ============================================
-   TANGERIN - CONSOLIDATED STYLES
+   Tanjreen - CONSOLIDATED STYLES
    Charcoal background with bright orange accents
    ============================================ */
 
@@ -280,7 +280,9 @@ header p {
 
 .btn.active.primary,
 .btn.primary:hover {
-  box-shadow: 0 0 5px var(--dr-epsilon), -5px 0 20px var(--dr-epsilon),
+  box-shadow:
+    0 0 5px var(--dr-epsilon),
+    -5px 0 20px var(--dr-epsilon),
     5px 0 20px var(--dr-zeta);
   scale: 0.95;
 }
@@ -288,21 +290,27 @@ header p {
 .btn.secondary:active,
 .btn.secondary:hover {
   background: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 0 0.2rem var(--dr-alpha), -0.2rem 0 1rem var(--dr-alpha),
+  box-shadow:
+    0 0 0.2rem var(--dr-alpha),
+    -0.2rem 0 1rem var(--dr-alpha),
     0.2rem 0 1rem var(--dr-alpha);
   scale: 0.95;
 }
 
 .btn.success:active,
 .btn.success:hover {
-  box-shadow: 0 0 0.2rem var(--dr-alpha), -0.2rem 0 1rem var(--dr-success),
+  box-shadow:
+    0 0 0.2rem var(--dr-alpha),
+    -0.2rem 0 1rem var(--dr-success),
     0.2rem 0 1rem var(--dr-success);
   scale: 0.95;
 }
 
 .btn.danger:active,
 .btn.danger:hover {
-  box-shadow: 0 0 0.2rem var(--dr-danger), -0.2rem 0 1rem var(--dr-danger),
+  box-shadow:
+    0 0 0.2rem var(--dr-danger),
+    -0.2rem 0 1rem var(--dr-danger),
     0.2rem 0 1rem var(--dr-danger);
   scale: 0.95;
 }
@@ -386,7 +394,9 @@ input.danger {
 
 .input:focus.danger,
 input.danger:focus {
-  box-shadow: 0 0 5px var(--dr-danger), -5px 0 20px var(--dr-danger),
+  box-shadow:
+    0 0 5px var(--dr-danger),
+    -5px 0 20px var(--dr-danger),
     5px 0 20px var(--dr-danger);
 }
 
@@ -405,9 +415,59 @@ input.danger:focus {
 }
 
 .voice-sample-btn:hover {
-  box-shadow: 0 0 0.2rem var(--dr-alpha), -0.2rem 0 1rem var(--dr-success),
+  box-shadow:
+    0 0 0.2rem var(--dr-alpha),
+    -0.2rem 0 1rem var(--dr-success),
     0.2rem 0 1rem var(--dr-success);
   scale: 0.95;
+}
+
+/* ============================================
+   INPUT MODE SELECTION
+   ============================================ */
+.input-mode-section {
+  margin: 25px 0;
+}
+
+.input-mode-toggle {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 12px 20px;
+  background: var(--dr-gamma);
+  color: var(--dr-pi);
+  border: 2px solid var(--dr-delta);
+  border-radius: 8px;
+  font-family: var(--dr-font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mode-btn:hover {
+  background: var(--dr-alpha);
+  border-color: var(--dr-epsilon);
+  transform: translateY(-2px);
+}
+
+.mode-btn.active {
+  background: var(--dr-epsilon);
+  border-color: var(--dr-epsilon);
+  color: var(--dr-beta);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.mode-btn i {
+  font-size: 16px;
 }
 
 /* ============================================
@@ -504,6 +564,56 @@ input.danger:focus {
 }
 
 /* ============================================
+   TEXT INPUT SECTION
+   ============================================ */
+.text-input-section {
+  margin: 25px 0;
+}
+
+.text-input-area {
+  width: 100%;
+  padding: 15px;
+  background: var(--dr-gamma);
+  color: var(--dr-pi);
+  border: 2px solid var(--dr-delta);
+  border-radius: 8px;
+  font-family: var(--dr-font-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 200px;
+  transition: all 0.3s ease;
+}
+
+.text-input-area:focus {
+  outline: none;
+  border-color: var(--dr-epsilon);
+  box-shadow: 0 0 15px rgba(255, 107, 53, 0.2);
+  background: var(--dr-alpha);
+}
+
+.text-input-area::placeholder {
+  color: var(--dr-rho);
+  opacity: 0.7;
+}
+
+.text-input-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--dr-alpha);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--dr-theta);
+}
+
+.text-input-info i {
+  font-size: 16px;
+}
+
+/* ============================================
    IMAGES SECTION
    ============================================ */
 .images-section {
@@ -566,7 +676,9 @@ input.danger:focus {
 }
 
 .start-btn:hover:not(:disabled) {
-  box-shadow: 0 0 5px var(--dr-epsilon), -5px 0 20px var(--dr-epsilon),
+  box-shadow:
+    0 0 5px var(--dr-epsilon),
+    -5px 0 20px var(--dr-epsilon),
     5px 0 20px var(--dr-zeta);
   scale: 0.98;
 }
@@ -791,7 +903,9 @@ input.danger:focus {
 }
 
 .switch:hover .track {
-  box-shadow: 0 0 5px var(--dr-epsilon), -5px 0 20px rgba(255, 107, 53, 0.3),
+  box-shadow:
+    0 0 5px var(--dr-epsilon),
+    -5px 0 20px rgba(255, 107, 53, 0.3),
     5px 0 20px rgba(255, 107, 53, 0.3);
   scale: 0.95;
 }
@@ -814,7 +928,9 @@ input.danger:focus {
 .switch:checked .thumb {
   left: 2.5rem;
   background-color: var(--dr-epsilon);
-  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 107, 53, 0.5);
+  box-shadow:
+    0px 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(255, 107, 53, 0.5);
 }
 
 .switch:checked .track {
@@ -871,7 +987,9 @@ input.danger:focus {
 }
 
 .textarea-shrood-47ks.danger:focus {
-  box-shadow: 0 0 5px var(--dr-danger), -5px 0 20px var(--dr-danger),
+  box-shadow:
+    0 0 5px var(--dr-danger),
+    -5px 0 20px var(--dr-danger),
     5px 0 20px var(--dr-danger);
 }
 
@@ -1044,7 +1162,9 @@ input.danger:focus {
   font-weight: 600;
   font-family: var(--dr-font-primary);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .login-btn:hover {

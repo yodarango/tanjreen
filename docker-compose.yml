@@ -1,7 +1,7 @@
 services:
-  tangerin:
+  Tanjreen:
     build: .
-    container_name: tangerin
+    container_name: Tanjreen
     ports:
       - "8011:8011"
     environment:
@@ -12,7 +12,7 @@ services:
       - DONE_DIR=./src/content/3.done
       - TEXT_LANG=eng
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-this-to-something-secure}
-      - AUTH_PASSWORD=${AUTH_PASSWORD:-tangerin2024}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-Tanjreen2024}
       - NODE_ENV=${NODE_ENV:-development}
       - TRANSFER_TO_PATH=${TRANSFER_TO_PATH:-}
     volumes:
@@ -22,8 +22,8 @@ services:
       - ./.env:/app/.env:ro
     restart: unless-stopped
     networks:
-      - tangerin-network
+      - Tanjreen-network
 
 networks:
-  tangerin-network:
+  Tanjreen-network:
     driver: bridge

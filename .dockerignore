@@ -6,7 +6,7 @@ npm-debug.log
 *.md
 !README.md
 .DS_Store
-tangerin.app
+Tanjreen.app
 src/content/1.pending/*
 src/content/2.working/*
 src/content/3.done/*

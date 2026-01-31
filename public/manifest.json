@@ -1,6 +1,6 @@
 {
-  "name": "Tangerin - OCR to Audiobook Converter",
-  "short_name": "Tangerin",
+  "name": "Tanjreen - OCR to Audiobook Converter",
+  "short_name": "Tanjreen",
   "description": "Transform your images into complete audiobooks with AI-powered OCR, text cleaning, translation, and text-to-speech conversion",
   "start_url": "/",
   "display": "standalone",
@@ -10,13 +10,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "tangerin_logo.webp",
+      "src": "Tanjreen_splash.webp",
       "sizes": "512x512",
       "type": "image/webp",
       "purpose": "any maskable"
     },
     {
-      "src": "tangerin_splash.webp",
+      "src": "Tanjreen_splash.webp",
       "sizes": "1024x1024",
       "type": "image/webp",
       "purpose": "any"
@@ -25,7 +25,7 @@
   "categories": ["productivity", "utilities", "education"],
   "screenshots": [
     {
-      "src": "tangerin_splash.webp",
+      "src": "Tanjreen_splash.webp",
       "sizes": "1024x1024",
       "type": "image/webp",
       "form_factor": "wide"

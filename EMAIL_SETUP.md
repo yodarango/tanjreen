@@ -1,6 +1,6 @@
 # 📧 Email Notification Setup Guide
 
-This guide will help you configure email notifications for Tangerin Audiobook Converter.
+This guide will help you configure email notifications for Tanjreen Audiobook Converter.
 
 ## 🎯 Overview
 
@@ -20,7 +20,7 @@ When an audiobook transformation completes (successfully or with errors), the sy
 
 1. Go to: https://myaccount.google.com/apppasswords
 2. Select **App**: Choose "Mail"
-3. Select **Device**: Choose "Other (Custom name)" and enter "Tangerin Audiobook"
+3. Select **Device**: Choose "Other (Custom name)" and enter "Tanjreen Audiobook"
 4. Click **Generate**
 5. **Copy the 16-character password** (it will look like: `abcd efgh ijkl mnop`)
 
@@ -38,6 +38,7 @@ EMAIL_TO=paradymuseless@gmail.com
 ```
 
 **Replace:**
+
 - `your-gmail-address@gmail.com` with your actual Gmail address
 - `abcdefghijklmnop` with the 16-character App Password (remove spaces)
 
@@ -52,6 +53,7 @@ When a transformation completes successfully, you'll receive:
 **Subject:** `✅ Audiobook Ready: [Book Title]`
 
 **Content:**
+
 - Book title
 - Output file path
 - Success message
@@ -63,6 +65,7 @@ When a transformation fails, you'll receive:
 **Subject:** `❌ Audiobook Failed: [Book Title]`
 
 **Content:**
+
 - Book title
 - Error message
 - Troubleshooting information
@@ -90,16 +93,19 @@ Check the server console for error messages:
 ```
 ⚠️  Email not configured, skipping notification
 ```
-→ Make sure all EMAIL_* variables are set in `.env`
+
+→ Make sure all EMAIL\_\* variables are set in `.env`
 
 ```
 ❌ Error sending email: Invalid login
 ```
+
 → Check that EMAIL_USER and EMAIL_PASSWORD are correct
 
 ```
 ❌ Error sending email: Connection timeout
 ```
+
 → Check your internet connection and firewall settings
 
 ### Gmail blocking the connection?
@@ -121,13 +127,13 @@ Check the server console for error messages:
 
 ## 📝 Configuration Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `EMAIL_HOST` | SMTP server hostname | `smtp.gmail.com` |
-| `EMAIL_PORT` | SMTP server port | `587` (TLS) or `465` (SSL) |
-| `EMAIL_USER` | Your Gmail address | `yourname@gmail.com` |
-| `EMAIL_PASSWORD` | Gmail App Password | `abcdefghijklmnop` |
-| `EMAIL_TO` | Recipient email | `paradymuseless@gmail.com` |
+| Variable         | Description          | Example                    |
+| ---------------- | -------------------- | -------------------------- |
+| `EMAIL_HOST`     | SMTP server hostname | `smtp.gmail.com`           |
+| `EMAIL_PORT`     | SMTP server port     | `587` (TLS) or `465` (SSL) |
+| `EMAIL_USER`     | Your Gmail address   | `yourname@gmail.com`       |
+| `EMAIL_PASSWORD` | Gmail App Password   | `abcdefghijklmnop`         |
+| `EMAIL_TO`       | Recipient email      | `paradymuseless@gmail.com` |
 
 ---
 
@@ -153,4 +159,3 @@ To customize the email templates, edit `src/utils/email.mjs`:
 ---
 
 **Need help?** Check the server logs for detailed error messages.
-

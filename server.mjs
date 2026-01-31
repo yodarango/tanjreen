@@ -64,7 +64,7 @@ const upload = multer({
     // Accept images and PDFs
     const allowedTypes = /jpeg|jpg|png|gif|bmp|tiff|webp|heic|heif|pdf/;
     const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase()
+      path.extname(file.originalname).toLowerCase(),
     );
     const mimetype =
       allowedTypes.test(file.mimetype) ||
@@ -138,7 +138,7 @@ app.post("/api/login", async (req, res) => {
     const jwtSecret = process.env.JWT_SECRET || "your-secret-key-change-this";
     const token = jwt.sign(
       { authenticated: true, timestamp: Date.now() },
-      jwtSecret
+      jwtSecret,
     );
 
     res.json({
@@ -238,7 +238,7 @@ app.post(
       console.error("❌ Error uploading images:", error);
       res.status(500).json({ error: "Failed to upload images" });
     }
-  }
+  },
 );
 
 // Once the user click start transformation, this will be ran
@@ -256,7 +256,7 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
     const validation = validateTransformationRequest(
       bookTitle,
       voice,
-      language
+      language,
     );
 
     if (!validation.isValid) {
@@ -297,7 +297,7 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
 
     fs.writeFileSync(
       `${workingDir}/temp.json`,
-      JSON.stringify(tempData, null, 2)
+      JSON.stringify(tempData, null, 2),
     );
 
     // Start the transformation process
@@ -309,6 +309,106 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Failed to start transformation" });
   }
 });
+
+// Start transformation from pasted text (skips OCR and amalgamation)
+app.post(
+  "/api/start-transformation-from-text",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { bookTitle, voice, language, text } = req.body;
+
+      if (transformationState.isRunning) {
+        return res
+          .status(400)
+          .json({ error: "Transformation already in progress" });
+      }
+
+      // Validate the request parameters
+      const validation = validateTransformationRequest(
+        bookTitle,
+        voice,
+        language,
+      );
+
+      if (!validation.isValid) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: validation.errors,
+          availableVoices: validation.availableVoices,
+          availableLanguages: validation.availableLanguages,
+        });
+      }
+
+      // Validate text input
+      if (!text || text.trim() === "") {
+        return res.status(400).json({ error: "Text input is required" });
+      }
+
+      // Tell the state we are starting to run
+      transformationState = {
+        completed: false,
+        isRunning: true,
+        bookTitle: bookTitle,
+        outputPath: null,
+        messages: [],
+        currentStep: 0,
+        progress: 0,
+        error: null,
+        currentStepProcess: {
+          totalItems: 0,
+          currentItem: 0,
+        },
+      };
+
+      // Clean the working directory BEFORE starting the process
+      const workingDir = process.env.WORKING_DIR;
+      const doneDir = process.env.DONE_DIR;
+      await cleanWorkingDirectory(workingDir);
+
+      // Sanitize book title for file/folder names
+      let sanitizedBookTitle = bookTitle
+        .replace(/[^a-zA-Z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+
+      // Create the done directory structure
+      const bookDir = path.join(doneDir, sanitizedBookTitle);
+      if (!fs.existsSync(bookDir)) {
+        fs.mkdirSync(bookDir, { recursive: true });
+      }
+
+      // Save the text to working directory as complete.txt (for step 3 to process)
+      const workingTextPath = path.join(workingDir, "text", "complete.txt");
+      fs.writeFileSync(workingTextPath, text, "utf8");
+      console.log(
+        `✅ Saved pasted text to working directory: ${workingTextPath}`,
+      );
+
+      // Write the book title, voice, and language to temp.json
+      const tempData = {
+        bookTitle,
+        voice,
+        language: language || null,
+        skipOCR: true, // Flag to indicate we should skip OCR and amalgamation
+      };
+
+      fs.writeFileSync(
+        `${workingDir}/temp.json`,
+        JSON.stringify(tempData, null, 2),
+      );
+
+      // Start the transformation process (will skip steps 1 and 2)
+      startTransformationProcessFromText(language);
+
+      res.json({ success: true, message: "Transformation started from text" });
+    } catch (error) {
+      console.error("Error starting transformation from text:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to start transformation from text" });
+    }
+  },
+);
 
 // Get transformation progress
 app.get("/api/progress", authenticateToken, (req, res) => {
@@ -599,7 +699,7 @@ function startTransformationProcess(language) {
         transformationState.bookTitle,
         transformationState.outputPath,
         true,
-        null
+        null,
       );
     } else {
       const errorMessage = `Process exited with code ${code}`;
@@ -614,7 +714,148 @@ function startTransformationProcess(language) {
         transformationState.bookTitle,
         null,
         false,
-        errorMessage
+        errorMessage,
+      );
+    }
+  });
+}
+
+// This function handles transformation from pasted text (skips OCR and amalgamation)
+function startTransformationProcessFromText(language) {
+  // Use a different process file that skips steps 1 and 2
+  const child = spawn("node", ["./src/process.text.mjs"], {
+    stdio: ["pipe", "pipe", "pipe"],
+    cwd: process.cwd(),
+  });
+
+  // Check if spawn was successful
+  if (!child) {
+    console.error("❌ Failed to spawn child process");
+    return;
+  }
+
+  let currentStep = 0;
+  // Skip steps 1 and 2, start from step 3
+  const stepKeywords = ["Step 3", "Step 4", "Step 5", "Step 6", "Step 7"];
+
+  // Calculate total steps (5 steps instead of 7, or 4 if no translation)
+  const totalSteps = language ? 5 : 4;
+
+  child.stdout.on("data", (data) => {
+    const output = data.toString();
+
+    console.log(output);
+
+    const lines = output.split("\n").filter((line) => line.trim());
+
+    lines.forEach((line) => {
+      // Try to parse JSON messages for sub-step progress
+      if (line.trim().startsWith("{") && line.trim().endsWith("}")) {
+        try {
+          const jsonMessage = JSON.parse(line);
+
+          // Update sub-step progress if message contains the right structure
+          if (jsonMessage.type === "STEP_PROGRESS") {
+            transformationState.currentStepProcess = {
+              totalItems: jsonMessage.totalItems || 0,
+              currentItem: jsonMessage.currentItem || 0,
+            };
+          }
+        } catch (e) {
+          // Not a valid JSON, continue with normal processing
+        }
+      }
+
+      // Check for step progression
+      stepKeywords.forEach((keyword, index) => {
+        if (line.includes(keyword)) {
+          currentStep = index;
+          // Add 2 to currentStep to account for skipped steps in UI
+          transformationState.currentStep = currentStep + 2;
+
+          // Calculate progress based on actual total steps
+          transformationState.progress = (currentStep / totalSteps) * 100;
+
+          // Reset sub-step progress when moving to a new step
+          transformationState.currentStepProcess = {
+            totalItems: 0,
+            currentItem: 0,
+          };
+        }
+      });
+    });
+  });
+
+  // if the spawn process fails, then alert the console
+  child.stderr.on("data", (data) => {
+    const error = data.toString();
+    console.error(error);
+
+    // Try to parse JSON error messages
+    try {
+      const lines = error.split("\n").filter((line) => line.trim());
+      lines.forEach((line) => {
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.type === "ERROR") {
+            transformationState.error = parsed.message;
+            transformationState.messages.push({
+              text: parsed.message,
+              type: "error",
+            });
+          }
+        } catch (e) {
+          // Not JSON, just log it
+        }
+      });
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  });
+
+  // another potential for failure
+  child.on("error", (error) => {
+    console.error("❌ Spawn error:", error);
+    transformationState.isRunning = false;
+    transformationState.error = `Spawn error: ${error.message}`;
+  });
+
+  // on closing alert too.
+  child.on("close", async (code) => {
+    transformationState.isRunning = false;
+
+    if (code === 0) {
+      transformationState.completed = true;
+      transformationState.progress = 100;
+      transformationState.currentStep = totalSteps + 2; // Add 2 for skipped steps
+
+      console.log(transformationState);
+      transformationState.messages.push({
+        text: "🎉 Transformation completed successfully!",
+        type: "success",
+      });
+
+      // Send success email notification
+      await sendCompletionEmail(
+        transformationState.bookTitle,
+        transformationState.outputPath,
+        true,
+        null,
+      );
+    } else {
+      const errorMessage = `Process exited with code ${code}`;
+      transformationState.error = errorMessage;
+      transformationState.messages.push({
+        text: `❌ Process failed with exit code ${code}`,
+        type: "error",
+      });
+
+      // Send failure email notification
+      await sendCompletionEmail(
+        transformationState.bookTitle,
+        null,
+        false,
+        errorMessage,
       );
     }
   });
@@ -623,6 +864,6 @@ function startTransformationProcess(language) {
 // Start server
 app.listen(PORT, () => {
   console.log(
-    `🚀 Audiobook Converter Server running on http://localhost:${PORT}`
+    `🚀 Audiobook Converter Server running on http://localhost:${PORT}`,
   );
 });
