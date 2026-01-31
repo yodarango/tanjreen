@@ -38,8 +38,6 @@ echo '👍 pulled changes from git and reset to origin'; \
 echo 'Current directory: '; pwd; \
 echo '🏗️ Building docker now...';\
 docker compose down; \
-docker stop Tanjreen 2>/dev/null || true; \
-docker rm Tanjreen 2>/dev/null || true; \
 docker compose up -d --build; \
 echo '🚀🚀🚀 Deployment successful'"
 

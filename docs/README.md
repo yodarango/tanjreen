@@ -13,7 +13,7 @@ Transform images into audiobooks using OCR and AI.
 docker-compose up -d
 
 # Access at http://localhost:8011
-# Or http://Tanjreen.danielrangel.com:8011 (after hosts file setup)
+# Or http://anjreen.danielrangel.com:8011 (after hosts file setup)
 ```
 
 ### Local
@@ -93,7 +93,7 @@ docker-compose ps
 
 ## Local Domain Setup
 
-To use `Tanjreen.danielrangel.com` instead of `localhost:8011`:
+To use `anjreen.danielrangel.com` instead of `localhost:8011`:
 
 **macOS/Linux:**
 
@@ -104,17 +104,17 @@ sudo nano /etc/hosts
 Add line:
 
 ```
-127.0.0.1 Tanjreen.danielrangel.com
+127.0.0.1 tanjreen.danielrangel.com
 ```
 
 **Windows:**
 Edit `C:\Windows\System32\drivers\etc\hosts` as Administrator, add:
 
 ```
-127.0.0.1 Tanjreen.danielrangel.com
+127.0.0.1 tanjreen.danielrangel.com
 ```
 
-Access at: `http://Tanjreen.danielrangel.com:8011`
+Access at: `http://tanjreen.danielrangel.com:8011`
 
 ---
 
