@@ -1,7 +1,7 @@
 services:
-  Tanjreen:
+  tanjreen:
     build: .
-    container_name: Tanjreen
+    container_name: tanjreen
     ports:
       - "8011:8011"
     environment:
@@ -22,8 +22,8 @@ services:
       - ./.env:/app/.env:ro
     restart: unless-stopped
     networks:
-      - Tanjreen-network
+      - tanjreen-network
 
 networks:
-  Tanjreen-network:
+  tanjreen-network:
     driver: bridge
