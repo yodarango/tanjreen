@@ -7,6 +7,7 @@ import express from "express";
 import multer from "multer";
 import archiver from "archiver";
 import dotenv from "dotenv";
+import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 
@@ -99,7 +100,65 @@ app.get("/content", (req, res) => {
 // Serve static files for assets (CSS, JS, images, etc.)
 app.use(express.static("public"));
 
-// Global state for tracking progress
+// ============================================================================
+// MULTI-PROCESS MANAGEMENT SYSTEM
+// ============================================================================
+
+/**
+ * Generate a unique 10-character alphanumeric ID (uppercase only)
+ */
+function generateProcessId() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let id = "";
+  const randomBytes = crypto.randomBytes(10);
+  for (let i = 0; i < 10; i++) {
+    id += chars[randomBytes[i] % chars.length];
+  }
+  return id;
+}
+
+/**
+ * Map to store all active processes
+ * Key: processId (10-char alphanumeric)
+ * Value: {
+ *   processId: string,
+ *   bookTitle: string,
+ *   childProcess: ChildProcess,
+ *   state: {
+ *     isRunning: boolean,
+ *     completed: boolean,
+ *     outputPath: string | null,
+ *     messages: string[],
+ *     currentStep: number,
+ *     progress: number,
+ *     error: string | null,
+ *     currentStepProcess: { totalItems: number, currentItem: number }
+ *   },
+ *   createdAt: Date
+ * }
+ */
+const activeProcesses = new Map();
+
+/**
+ * Get the most recent process ID
+ */
+function getMostRecentProcessId() {
+  if (activeProcesses.size === 0) return null;
+
+  let mostRecent = null;
+  let latestTime = 0;
+
+  for (const [processId, processData] of activeProcesses.entries()) {
+    if (processData.createdAt.getTime() > latestTime) {
+      latestTime = processData.createdAt.getTime();
+      mostRecent = processId;
+    }
+  }
+
+  return mostRecent;
+}
+
+// Legacy global state for backward compatibility (deprecated)
 let transformationState = {
   isRunning: false,
   completed: false,
@@ -246,12 +305,6 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
   try {
     const { bookTitle, voice, language } = req.body;
 
-    if (transformationState.isRunning) {
-      return res
-        .status(400)
-        .json({ error: "Transformation already in progress" });
-    }
-
     // Validate the request parameters
     const validation = validateTransformationRequest(
       bookTitle,
@@ -268,8 +321,11 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
       });
     }
 
-    // Tell the state we are starting to run
-    transformationState = {
+    // Generate unique process ID
+    const processId = generateProcessId();
+
+    // Create initial state for this process
+    const initialState = {
       completed: false,
       isRunning: true,
       bookTitle: bookTitle,
@@ -283,6 +339,18 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
         currentItem: 0,
       },
     };
+
+    // Store process in the Map
+    activeProcesses.set(processId, {
+      processId: processId,
+      bookTitle: bookTitle,
+      childProcess: null, // Will be set after spawn
+      state: initialState,
+      createdAt: new Date(),
+    });
+
+    // Also update legacy state for backward compatibility
+    transformationState = { ...initialState };
 
     // Clean the working directory BEFORE starting the process
     const workingDir = process.env.WORKING_DIR;
@@ -301,9 +369,20 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
     );
 
     // Start the transformation process
-    startTransformationProcess(language);
+    const child = startTransformationProcess(processId, bookTitle, language);
 
-    res.json({ success: true, message: "Transformation started" });
+    // Update the child process reference
+    if (child) {
+      activeProcesses.get(processId).childProcess = child;
+    }
+
+    console.log(`🚀 Started new process: ${processId} - "${bookTitle}"`);
+
+    res.json({
+      success: true,
+      message: "Transformation started",
+      processId: processId,
+    });
   } catch (error) {
     console.error("Error starting transformation:", error);
     res.status(500).json({ error: "Failed to start transformation" });
@@ -317,12 +396,6 @@ app.post(
   async (req, res) => {
     try {
       const { bookTitle, voice, language, text } = req.body;
-
-      if (transformationState.isRunning) {
-        return res
-          .status(400)
-          .json({ error: "Transformation already in progress" });
-      }
 
       // Validate the request parameters
       const validation = validateTransformationRequest(
@@ -345,8 +418,11 @@ app.post(
         return res.status(400).json({ error: "Text input is required" });
       }
 
-      // Tell the state we are starting to run
-      transformationState = {
+      // Generate unique process ID
+      const processId = generateProcessId();
+
+      // Create initial state for this process
+      const initialState = {
         completed: false,
         isRunning: true,
         bookTitle: bookTitle,
@@ -360,6 +436,18 @@ app.post(
           currentItem: 0,
         },
       };
+
+      // Store process in the Map
+      activeProcesses.set(processId, {
+        processId: processId,
+        bookTitle: bookTitle,
+        childProcess: null,
+        state: initialState,
+        createdAt: new Date(),
+      });
+
+      // Also update legacy state
+      transformationState = { ...initialState };
 
       // Clean the working directory BEFORE starting the process
       const workingDir = process.env.WORKING_DIR;
@@ -398,9 +486,26 @@ app.post(
       );
 
       // Start the transformation process (will skip steps 1 and 2)
-      startTransformationProcessFromText(language);
+      const child = startTransformationProcessFromText(
+        processId,
+        bookTitle,
+        language,
+      );
 
-      res.json({ success: true, message: "Transformation started from text" });
+      // Update the child process reference
+      if (child) {
+        activeProcesses.get(processId).childProcess = child;
+      }
+
+      console.log(
+        `🚀 Started new process from text: ${processId} - "${bookTitle}"`,
+      );
+
+      res.json({
+        success: true,
+        message: "Transformation started from text",
+        processId: processId,
+      });
     } catch (error) {
       console.error("Error starting transformation from text:", error);
       res
@@ -410,9 +515,78 @@ app.post(
   },
 );
 
-// Get transformation progress
+// ============================================================================
+// NEW MULTI-PROCESS API ENDPOINTS
+// ============================================================================
+
+// Get list of all active processes
+app.get("/api/processes", authenticateToken, (req, res) => {
+  try {
+    const processList = [];
+
+    for (const [processId, processData] of activeProcesses.entries()) {
+      processList.push({
+        processId: processId,
+        bookTitle: processData.bookTitle,
+        progress: processData.state.progress,
+        currentStep: processData.state.currentStep,
+        isRunning: processData.state.isRunning,
+        completed: processData.state.completed,
+        error: processData.state.error,
+        createdAt: processData.createdAt,
+      });
+    }
+
+    // Sort by creation time (most recent first)
+    processList.sort((a, b) => b.createdAt - a.createdAt);
+
+    res.json({
+      processes: processList,
+      mostRecentId: getMostRecentProcessId(),
+    });
+  } catch (error) {
+    console.error("Error getting processes list:", error);
+    res.status(500).json({ error: "Failed to get processes list" });
+  }
+});
+
+// Get detailed state of a specific process
+app.get("/api/process/:processId", authenticateToken, (req, res) => {
+  try {
+    const { processId } = req.params;
+
+    if (!activeProcesses.has(processId)) {
+      return res.status(404).json({ error: "Process not found" });
+    }
+
+    const processData = activeProcesses.get(processId);
+
+    res.json({
+      processId: processId,
+      bookTitle: processData.bookTitle,
+      state: processData.state,
+      createdAt: processData.createdAt,
+    });
+  } catch (error) {
+    console.error("Error getting process details:", error);
+    res.status(500).json({ error: "Failed to get process details" });
+  }
+});
+
+// Get transformation progress (legacy endpoint - returns most recent process)
 app.get("/api/progress", authenticateToken, (req, res) => {
-  res.json(transformationState);
+  const mostRecentId = getMostRecentProcessId();
+
+  if (mostRecentId && activeProcesses.has(mostRecentId)) {
+    const processData = activeProcesses.get(mostRecentId);
+    res.json({
+      ...processData.state,
+      processId: mostRecentId,
+    });
+  } else {
+    // Return legacy state if no processes
+    res.json(transformationState);
+  }
 });
 
 // Get list of completed content files and folders
@@ -574,7 +748,7 @@ app.delete("/api/content/delete/:filename", authenticateToken, (req, res) => {
 });
 
 // This is in charge of running every single part of the process and update the global state
-function startTransformationProcess(language) {
+function startTransformationProcess(processId, bookTitle, language) {
   // pass the book title and voice as a func param
   const child = spawn("node", ["./src/process.web.mjs"], {
     stdio: ["pipe", "pipe", "pipe"],
@@ -584,7 +758,14 @@ function startTransformationProcess(language) {
   // Check if spawn was successful
   if (!child) {
     console.error("❌ Failed to spawn child process");
-    return;
+    return null;
+  }
+
+  // Get the process data from the Map
+  const processData = activeProcesses.get(processId);
+  if (!processData) {
+    console.error("❌ Process data not found for ID:", processId);
+    return null;
   }
 
   let currentStep = 0;
@@ -616,6 +797,12 @@ function startTransformationProcess(language) {
 
           // Update sub-step progress if message contains the right structure
           if (jsonMessage.type === "STEP_PROGRESS") {
+            processData.state.currentStepProcess = {
+              totalItems: jsonMessage.totalItems || 0,
+              currentItem: jsonMessage.currentItem || 0,
+            };
+
+            // Also update legacy state
             transformationState.currentStepProcess = {
               totalItems: jsonMessage.totalItems || 0,
               currentItem: jsonMessage.currentItem || 0,
@@ -630,12 +817,18 @@ function startTransformationProcess(language) {
       stepKeywords.forEach((keyword, index) => {
         if (line.includes(keyword)) {
           currentStep = index;
-          transformationState.currentStep = currentStep;
+          processData.state.currentStep = currentStep;
+          processData.state.progress = (currentStep / totalSteps) * 100;
 
-          // Calculate progress based on actual total steps
+          // Also update legacy state
+          transformationState.currentStep = currentStep;
           transformationState.progress = (currentStep / totalSteps) * 100;
 
           // Reset sub-step progress when moving to a new step
+          processData.state.currentStepProcess = {
+            totalItems: 0,
+            currentItem: 0,
+          };
           transformationState.currentStepProcess = {
             totalItems: 0,
             currentItem: 0,
@@ -657,6 +850,13 @@ function startTransformationProcess(language) {
         try {
           const parsed = JSON.parse(line);
           if (parsed.type === "ERROR") {
+            processData.state.error = parsed.message;
+            processData.state.messages.push({
+              text: parsed.message,
+              type: "error",
+            });
+
+            // Also update legacy state
             transformationState.error = parsed.message;
             transformationState.messages.push({
               text: parsed.message,
@@ -675,53 +875,78 @@ function startTransformationProcess(language) {
   // another potential for failure
   child.on("error", (error) => {
     console.error("❌ Spawn error:", error);
+    processData.state.isRunning = false;
+    processData.state.error = `Spawn error: ${error.message}`;
+
+    // Also update legacy state
     transformationState.isRunning = false;
     transformationState.error = `Spawn error: ${error.message}`;
   });
 
   // on closing alert too.
   child.on("close", async (code) => {
+    processData.state.isRunning = false;
     transformationState.isRunning = false;
 
     if (code === 0) {
+      processData.state.completed = true;
+      processData.state.progress = 100;
+      processData.state.currentStep = totalSteps;
+      processData.state.messages.push({
+        text: "🎉 Transformation completed successfully!",
+        type: "success",
+      });
+
+      // Also update legacy state
       transformationState.completed = true;
       transformationState.progress = 100;
       transformationState.currentStep = totalSteps;
-
-      console.log(transformationState);
       transformationState.messages.push({
         text: "🎉 Transformation completed successfully!",
         type: "success",
       });
 
+      console.log(`✅ Process ${processId} completed successfully`);
+
       // Send success email notification
       await sendCompletionEmail(
-        transformationState.bookTitle,
-        transformationState.outputPath,
+        processData.bookTitle,
+        processData.state.outputPath,
         true,
         null,
       );
     } else {
       const errorMessage = `Process exited with code ${code}`;
+      processData.state.error = errorMessage;
+      processData.state.messages.push({
+        text: `❌ Process failed with exit code ${code}`,
+        type: "error",
+      });
+
+      // Also update legacy state
       transformationState.error = errorMessage;
       transformationState.messages.push({
         text: `❌ Process failed with exit code ${code}`,
         type: "error",
       });
 
+      console.log(`❌ Process ${processId} failed with code ${code}`);
+
       // Send failure email notification
       await sendCompletionEmail(
-        transformationState.bookTitle,
+        processData.bookTitle,
         null,
         false,
         errorMessage,
       );
     }
   });
+
+  return child;
 }
 
 // This function handles transformation from pasted text (skips OCR and amalgamation)
-function startTransformationProcessFromText(language) {
+function startTransformationProcessFromText(processId, bookTitle, language) {
   // Use a different process file that skips steps 1 and 2
   const child = spawn("node", ["./src/process.text.mjs"], {
     stdio: ["pipe", "pipe", "pipe"],
@@ -731,7 +956,14 @@ function startTransformationProcessFromText(language) {
   // Check if spawn was successful
   if (!child) {
     console.error("❌ Failed to spawn child process");
-    return;
+    return null;
+  }
+
+  // Get the process data from the Map
+  const processData = activeProcesses.get(processId);
+  if (!processData) {
+    console.error("❌ Process data not found for ID:", processId);
+    return null;
   }
 
   let currentStep = 0;
@@ -743,40 +975,40 @@ function startTransformationProcessFromText(language) {
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
-
     console.log(output);
-
     const lines = output.split("\n").filter((line) => line.trim());
 
     lines.forEach((line) => {
-      // Try to parse JSON messages for sub-step progress
       if (line.trim().startsWith("{") && line.trim().endsWith("}")) {
         try {
           const jsonMessage = JSON.parse(line);
-
-          // Update sub-step progress if message contains the right structure
           if (jsonMessage.type === "STEP_PROGRESS") {
+            processData.state.currentStepProcess = {
+              totalItems: jsonMessage.totalItems || 0,
+              currentItem: jsonMessage.currentItem || 0,
+            };
             transformationState.currentStepProcess = {
               totalItems: jsonMessage.totalItems || 0,
               currentItem: jsonMessage.currentItem || 0,
             };
           }
         } catch (e) {
-          // Not a valid JSON, continue with normal processing
+          // Not a valid JSON
         }
       }
 
-      // Check for step progression
       stepKeywords.forEach((keyword, index) => {
         if (line.includes(keyword)) {
           currentStep = index;
-          // Add 2 to currentStep to account for skipped steps in UI
+          processData.state.currentStep = currentStep + 2;
+          processData.state.progress = (currentStep / totalSteps) * 100;
+          processData.state.currentStepProcess = {
+            totalItems: 0,
+            currentItem: 0,
+          };
+
           transformationState.currentStep = currentStep + 2;
-
-          // Calculate progress based on actual total steps
           transformationState.progress = (currentStep / totalSteps) * 100;
-
-          // Reset sub-step progress when moving to a new step
           transformationState.currentStepProcess = {
             totalItems: 0,
             currentItem: 0,
@@ -786,18 +1018,20 @@ function startTransformationProcessFromText(language) {
     });
   });
 
-  // if the spawn process fails, then alert the console
   child.stderr.on("data", (data) => {
     const error = data.toString();
     console.error(error);
-
-    // Try to parse JSON error messages
     try {
       const lines = error.split("\n").filter((line) => line.trim());
       lines.forEach((line) => {
         try {
           const parsed = JSON.parse(line);
           if (parsed.type === "ERROR") {
+            processData.state.error = parsed.message;
+            processData.state.messages.push({
+              text: parsed.message,
+              type: "error",
+            });
             transformationState.error = parsed.message;
             transformationState.messages.push({
               text: parsed.message,
@@ -805,60 +1039,75 @@ function startTransformationProcessFromText(language) {
             });
           }
         } catch (e) {
-          // Not JSON, just log it
+          // Not JSON
         }
       });
     } catch (e) {
-      // Ignore parsing errors
+      // Ignore
     }
   });
 
-  // another potential for failure
   child.on("error", (error) => {
     console.error("❌ Spawn error:", error);
+    processData.state.isRunning = false;
+    processData.state.error = `Spawn error: ${error.message}`;
     transformationState.isRunning = false;
     transformationState.error = `Spawn error: ${error.message}`;
   });
 
-  // on closing alert too.
   child.on("close", async (code) => {
+    processData.state.isRunning = false;
     transformationState.isRunning = false;
 
     if (code === 0) {
+      processData.state.completed = true;
+      processData.state.progress = 100;
+      processData.state.currentStep = totalSteps + 2;
+      processData.state.messages.push({
+        text: "🎉 Transformation completed successfully!",
+        type: "success",
+      });
+
       transformationState.completed = true;
       transformationState.progress = 100;
-      transformationState.currentStep = totalSteps + 2; // Add 2 for skipped steps
-
-      console.log(transformationState);
+      transformationState.currentStep = totalSteps + 2;
       transformationState.messages.push({
         text: "🎉 Transformation completed successfully!",
         type: "success",
       });
 
-      // Send success email notification
+      console.log(`✅ Process ${processId} completed successfully`);
       await sendCompletionEmail(
-        transformationState.bookTitle,
-        transformationState.outputPath,
+        processData.bookTitle,
+        processData.state.outputPath,
         true,
         null,
       );
     } else {
       const errorMessage = `Process exited with code ${code}`;
+      processData.state.error = errorMessage;
+      processData.state.messages.push({
+        text: `❌ Process failed with exit code ${code}`,
+        type: "error",
+      });
+
       transformationState.error = errorMessage;
       transformationState.messages.push({
         text: `❌ Process failed with exit code ${code}`,
         type: "error",
       });
 
-      // Send failure email notification
+      console.log(`❌ Process ${processId} failed with code ${code}`);
       await sendCompletionEmail(
-        transformationState.bookTitle,
+        processData.bookTitle,
         null,
         false,
         errorMessage,
       );
     }
   });
+
+  return child;
 }
 
 // Start server

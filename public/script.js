@@ -6,6 +6,11 @@ class AudiobookConverter {
     this.authToken = localStorage.getItem("authToken");
     this.inputMode = "images"; // 'images' or 'text'
 
+    // Multi-process management
+    this.currentView = "processes"; // 'processes', 'form', 'progress'
+    this.selectedProcessId = null;
+    this.processes = [];
+
     // Check authentication before initializing
     this.checkAuth().then((isAuthenticated) => {
       if (!isAuthenticated) {
@@ -15,8 +20,8 @@ class AudiobookConverter {
 
       this.initializeElements();
       this.setupEventListeners();
+      this.loadProcesses(); // Load processes first
       this.loadImages();
-      this.checkProcessStatus();
     });
   }
 
@@ -88,6 +93,12 @@ class AudiobookConverter {
   }
 
   initializeElements() {
+    // Multi-process elements
+    this.processesListSection = document.getElementById("processesListSection");
+    this.processesList = document.getElementById("processesList");
+    this.startNewProcessBtn = document.getElementById("startNewProcessBtn");
+    this.configSection = document.getElementById("configSection");
+
     this.bookTitleInput = document.getElementById("bookTitle");
     this.voiceSelect = document.getElementById("voiceSelect");
     this.languageSelect = document.getElementById("languageSelect");
@@ -119,6 +130,9 @@ class AudiobookConverter {
   }
 
   setupEventListeners() {
+    // Multi-process listeners
+    this.startNewProcessBtn.addEventListener("click", () => this.showForm());
+
     this.startBtn.addEventListener("click", () => this.startTransformation());
     this.playVoiceSampleBtn.addEventListener("click", () =>
       this.playVoiceSample(),
@@ -493,6 +507,8 @@ class AudiobookConverter {
       '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
     try {
+      let responseData;
+
       // Different endpoints based on input mode
       if (this.inputMode === "text") {
         // Use text input endpoint
@@ -513,6 +529,8 @@ class AudiobookConverter {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        responseData = await response.json();
       } else {
         // Use images endpoint (original flow)
         const response = await fetch("/api/start-transformation", {
@@ -531,10 +549,18 @@ class AudiobookConverter {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        responseData = await response.json();
       }
 
-      // Start polling for progress updates
-      this.pollProgress();
+      // Get the processId from response
+      const processId = responseData.processId;
+
+      // Reload processes list
+      await this.loadProcesses();
+
+      // Show the progress for this new process
+      this.showProgress(processId);
     } catch (error) {
       console.error("Error starting transformation:", error);
       alert("Error starting transformation: " + error.message);
@@ -544,10 +570,18 @@ class AudiobookConverter {
 
   async pollProgress() {
     try {
-      const response = await fetch("/api/progress", {
+      // Use specific process endpoint if we have a selected process
+      const endpoint = this.selectedProcessId
+        ? `/api/process/${this.selectedProcessId}`
+        : "/api/progress";
+
+      const response = await fetch(endpoint, {
         headers: this.getAuthHeaders(),
       });
-      const data = await response.json();
+      const responseData = await response.json();
+
+      // Extract state from response (process endpoint returns {state: {...}})
+      const data = responseData.state || responseData;
 
       this.updateProgress(data.progress);
       this.updateSteps(data.currentStep, data.currentStepProcess);
@@ -560,14 +594,31 @@ class AudiobookConverter {
           '<i class="fas fa-check-circle"></i>',
         );
         this.hideAllSubsteps();
+
+        // Reload processes list to update status
+        await this.loadProcesses();
+
         alert("Transformation completed successfully!");
       } else if (data.error) {
         this.resetStartButton();
         this.hideAllSubsteps();
+
+        // Reload processes list to update status
+        await this.loadProcesses();
+
         alert("✗ Transformation failed: " + data.error);
       } else {
         // Continue polling
         setTimeout(() => this.pollProgress(), 1000);
+
+        // Also update the processes list periodically (every 5 seconds)
+        if (
+          !this.lastProcessListUpdate ||
+          Date.now() - this.lastProcessListUpdate > 5000
+        ) {
+          this.lastProcessListUpdate = Date.now();
+          this.loadProcesses();
+        }
       }
     } catch (error) {
       console.error("Error checking progress:", error);
@@ -699,6 +750,195 @@ class AudiobookConverter {
     this.startBtn.disabled = false;
     this.startBtn.innerHTML =
       '<i class="fas fa-rocket"></i> Start Transformation';
+  }
+
+  // ============================================
+  // MULTI-PROCESS MANAGEMENT METHODS
+  // ============================================
+
+  async loadProcesses() {
+    try {
+      const response = await fetch("/api/processes", {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to load processes");
+        return;
+      }
+
+      const data = await response.json();
+      this.processes = data.processes || [];
+      const mostRecentId = data.mostRecentId;
+
+      // If there are processes, show the most recent one
+      if (mostRecentId) {
+        this.selectedProcessId = mostRecentId;
+        this.showProgress(mostRecentId);
+      } else {
+        // No processes, show the form
+        this.showForm();
+      }
+
+      this.renderProcessesList();
+    } catch (error) {
+      console.error("Error loading processes:", error);
+      this.showForm(); // Fallback to form
+    }
+  }
+
+  renderProcessesList() {
+    if (!this.processesList) return;
+
+    if (this.processes.length === 0) {
+      this.processesList.innerHTML = `
+        <div class="processes-empty">
+          <i class="fas fa-inbox"></i>
+          <p>No active processes</p>
+          <p style="font-size: 0.9rem;">Click "Start New Conversion" to begin</p>
+        </div>
+      `;
+      return;
+    }
+
+    this.processesList.innerHTML = this.processes
+      .map((process) => {
+        const isActive = process.processId === this.selectedProcessId;
+        const statusClass = process.completed
+          ? "completed"
+          : process.error
+            ? "error"
+            : "running";
+        const statusText = process.completed
+          ? "Completed"
+          : process.error
+            ? "Error"
+            : "Running";
+        const statusIcon = process.completed
+          ? "fa-check-circle"
+          : process.error
+            ? "fa-exclamation-circle"
+            : "fa-spinner fa-spin";
+
+        return `
+          <div class="process-item ${isActive ? "active" : ""}" data-process-id="${process.processId}">
+            <div class="process-item-header">
+              <h3 class="process-title">${process.bookTitle || "Untitled"}</h3>
+              <span class="process-id">${process.processId}</span>
+            </div>
+
+            <div class="process-status">
+              <span class="process-status-badge ${statusClass}">
+                <i class="fas ${statusIcon}"></i>
+                ${statusText}
+              </span>
+
+              <div class="process-progress-mini">
+                <div class="process-progress-bar">
+                  <div class="process-progress-fill" style="width: ${process.progress}%"></div>
+                </div>
+                <div class="process-progress-text">${Math.round(process.progress)}%</div>
+              </div>
+            </div>
+
+            <div class="process-meta">
+              <span class="process-step">
+                <i class="fas fa-tasks"></i>
+                Step ${process.currentStep}/7
+              </span>
+              <span class="process-time">
+                ${this.formatDate(process.createdAt)}
+              </span>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    // Add click listeners to process items
+    this.processesList.querySelectorAll(".process-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const processId = item.dataset.processId;
+        this.showProgress(processId);
+      });
+    });
+  }
+
+  formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return date.toLocaleDateString();
+  }
+
+  showForm() {
+    this.currentView = "form";
+    this.selectedProcessId = null;
+
+    // Hide processes list and progress
+    if (this.processesListSection) {
+      this.processesListSection.classList.add("hidden");
+    }
+    if (this.configSection) {
+      this.configSection.classList.remove("hidden");
+    }
+
+    // Stop polling if active
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+  }
+
+  showProgress(processId) {
+    this.currentView = "progress";
+    this.selectedProcessId = processId;
+
+    // Hide form, show processes list
+    if (this.configSection) {
+      this.configSection.classList.add("hidden");
+    }
+    if (this.processesListSection) {
+      this.processesListSection.classList.remove("hidden");
+    }
+
+    // Update active state in list
+    this.renderProcessesList();
+
+    // Load and poll this specific process
+    this.loadProcessDetails(processId);
+  }
+
+  async loadProcessDetails(processId) {
+    try {
+      const response = await fetch(`/api/process/${processId}`, {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to load process details");
+        return;
+      }
+
+      const data = await response.json();
+
+      // Update UI with process state
+      this.updateProgress(data.state.progress);
+      this.updateSteps(data.state.currentStep, data.state.currentStepProcess);
+
+      // If process is still running, start polling
+      if (data.state.isRunning) {
+        this.isProcessing = true;
+        this.pollProgress();
+      }
+    } catch (error) {
+      console.error("Error loading process details:", error);
+    }
   }
 }
 

@@ -1241,3 +1241,235 @@ input.danger:focus {
     font-size: 2rem;
   }
 }
+
+/* ============================================
+   PROCESSES LIST STYLES
+   ============================================ */
+
+.processes-list-section {
+  background: var(--dr-beta);
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 25px;
+  border: 1px solid var(--dr-gamma);
+}
+
+.processes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.processes-header h2 {
+  margin: 0;
+  color: var(--dr-epsilon);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#startNewProcessBtn {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.processes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.process-item {
+  background: var(--dr-alpha);
+  border: 2px solid var(--dr-gamma);
+  border-radius: 8px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.process-item:hover {
+  border-color: var(--dr-epsilon);
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+}
+
+.process-item.active {
+  border-color: var(--dr-epsilon);
+  background: var(--dr-gamma);
+}
+
+.process-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.process-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--dr-text-primary);
+  margin: 0;
+  flex: 1;
+}
+
+.process-id {
+  font-size: 0.75rem;
+  color: var(--dr-text-secondary);
+  background: var(--dr-gamma);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  margin-left: 10px;
+}
+
+.process-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.process-status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.process-status-badge.running {
+  background: rgba(78, 205, 196, 0.2);
+  color: var(--dr-theta);
+  border: 1px solid var(--dr-theta);
+}
+
+.process-status-badge.completed {
+  background: rgba(6, 255, 165, 0.2);
+  color: var(--dr-mu);
+  border: 1px solid var(--dr-mu);
+}
+
+.process-status-badge.error {
+  background: rgba(255, 0, 110, 0.2);
+  color: var(--dr-lambda);
+  border: 1px solid var(--dr-lambda);
+}
+
+.process-progress-mini {
+  flex: 1;
+}
+
+.process-progress-bar {
+  height: 6px;
+  background: var(--dr-gamma);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.process-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--dr-epsilon), var(--dr-zeta));
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.process-progress-text {
+  font-size: 0.75rem;
+  color: var(--dr-text-secondary);
+  text-align: right;
+}
+
+.process-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--dr-text-secondary);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--dr-gamma);
+}
+
+.process-step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.process-time {
+  font-style: italic;
+}
+
+/* Empty state */
+.processes-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--dr-text-secondary);
+}
+
+.processes-empty i {
+  font-size: 3rem;
+  color: var(--dr-gamma);
+  margin-bottom: 15px;
+  display: block;
+}
+
+.processes-empty p {
+  margin: 10px 0;
+  font-size: 1.1rem;
+}
+
+/* Scrollbar styling for processes list */
+.processes-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.processes-list::-webkit-scrollbar-track {
+  background: var(--dr-gamma);
+  border-radius: 4px;
+}
+
+.processes-list::-webkit-scrollbar-thumb {
+  background: var(--dr-epsilon);
+  border-radius: 4px;
+}
+
+.processes-list::-webkit-scrollbar-thumb:hover {
+  background: var(--dr-zeta);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .processes-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #startNewProcessBtn {
+    width: 100%;
+  }
+
+  .process-item-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .process-id {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+}
