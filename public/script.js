@@ -880,13 +880,16 @@ class AudiobookConverter {
     this.currentView = "form";
     this.selectedProcessId = null;
 
-    // Hide processes list and progress
+    // Always show both form and processes list
     if (this.processesListSection) {
-      this.processesListSection.classList.add("hidden");
+      this.processesListSection.classList.remove("hidden");
     }
     if (this.configSection) {
       this.configSection.classList.remove("hidden");
     }
+
+    // Update active state in list (deselect all)
+    this.renderProcessesList();
 
     // Stop polling if active
     if (this.pollInterval) {
@@ -899,9 +902,9 @@ class AudiobookConverter {
     this.currentView = "progress";
     this.selectedProcessId = processId;
 
-    // Hide form, show processes list
+    // Always show both form and processes list
     if (this.configSection) {
-      this.configSection.classList.add("hidden");
+      this.configSection.classList.remove("hidden");
     }
     if (this.processesListSection) {
       this.processesListSection.classList.remove("hidden");

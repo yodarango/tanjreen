@@ -27,7 +27,7 @@ async function startProcess() {
   // grab the book title, voice, and language from the temp file
   const workingDir = process.env.WORKING_DIR;
   const tempData = JSON.parse(
-    fs.readFileSync(`${workingDir}/temp.json`, "utf8")
+    fs.readFileSync(`${workingDir}/temp.json`, "utf8"),
   );
   const bookTitle = tempData.bookTitle || "";
   const voice = tempData.voice || "echo";
