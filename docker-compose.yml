@@ -13,6 +13,8 @@ services:
       - TEXT_LANG=eng
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-this-to-something-secure}
       - AUTH_PASSWORD=${AUTH_PASSWORD:-Tanjreen2024}
+      - API_KEY=${API_KEY:-}
+      - API_REQUESTS_DIR=./src/content/api_requests
       - NODE_ENV=${NODE_ENV:-development}
       - TRANSFER_TO_PATH=${TRANSFER_TO_PATH:-}
     volumes:

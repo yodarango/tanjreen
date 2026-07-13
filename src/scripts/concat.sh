@@ -10,8 +10,12 @@ fi
 # Get the filename from the first argument
 filename="$1"
 
+# Allow per-request directories via environment variables, falling back to defaults
+WORKING_DIR="${WORKING_DIR:-./src/content/2.working}"
+DONE_DIR="${DONE_DIR:-./src/content/3.done}"
+
 # Set the directory containing the MP3 files - directly under working/audio/
-directory="./src/content/2.working/audio"
+directory="$WORKING_DIR/audio"
 
 # Check if directory exists
 if [ ! -d "$directory" ]; then
@@ -32,7 +36,7 @@ done
 files="${files#|}"
 
 # Output directory in DONE_DIR
-output_dir="./src/content/3.done/$filename"
+output_dir="$DONE_DIR/$filename"
 
 # Create output directory if it doesn't exist
 mkdir -p "$output_dir"

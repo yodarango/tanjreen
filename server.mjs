@@ -1,7 +1,9 @@
 import { validateTransformationRequest } from "./src/utils/validate.mjs";
 import { authenticateToken } from "./src/middleware/auth.mjs";
+import { authenticateApiKey } from "./src/middleware/apiKey.mjs";
 import { sendCompletionEmail } from "./src/utils/email.mjs";
 import { spawn } from "child_process";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import express from "express";
 import multer from "multer";
@@ -79,6 +81,106 @@ const upload = multer({
     }
   },
 });
+
+// Multer storage for the programmatic API - saves files into the per-request directory
+const apiStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const pendingDir = path.join(req.requestDir, "pending");
+    if (!fs.existsSync(pendingDir)) {
+      fs.mkdirSync(pendingDir, { recursive: true });
+    }
+    cb(null, pendingDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const apiUpload = multer({
+  storage: apiStorage,
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /jpeg|jpg|png|gif|bmp|tiff|webp|heic|heif|pdf/;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimetype =
+      allowedTypes.test(file.mimetype) ||
+      file.mimetype === "image/heic" ||
+      file.mimetype === "image/heif" ||
+      file.mimetype === "application/pdf";
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Only image and PDF files are allowed!"));
+    }
+  },
+});
+
+/**
+ * Sanitize a book title for safe file/folder names.
+ */
+function sanitizeBookTitle(title) {
+  return title.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+/**
+ * Build the expected output folder name (matches pipeline logic).
+ */
+function buildOutputFolderName(bookTitle, language) {
+  let folder = sanitizeBookTitle(bookTitle);
+  if (language && typeof language === "string" && language.trim() !== "") {
+    folder += `_${language}`;
+  }
+  return folder;
+}
+
+/**
+ * Create a unique per-request directory and the standard subdirectories.
+ */
+function createApiRequestDirectory() {
+  const requestId = crypto.randomUUID();
+  const baseDir = process.env.API_REQUESTS_DIR || "./src/content/api_requests";
+  const requestDir = path.join(baseDir, requestId);
+
+  fs.mkdirSync(path.join(requestDir, "pending"), { recursive: true });
+  fs.mkdirSync(path.join(requestDir, "working", "text"), { recursive: true });
+  fs.mkdirSync(path.join(requestDir, "working", "audio"), { recursive: true });
+  fs.mkdirSync(path.join(requestDir, "done"), { recursive: true });
+
+  return { requestId, requestDir };
+}
+
+/**
+ * Clean up intermediate files (pending/working) for a request, leaving the done directory.
+ */
+async function cleanupApiRequestDirectory(requestDir) {
+  try {
+    const pendingDir = path.join(requestDir, "pending");
+    const workingDir = path.join(requestDir, "working");
+
+    if (fs.existsSync(pendingDir)) {
+      fs.rmSync(pendingDir, { recursive: true, force: true });
+    }
+    if (fs.existsSync(workingDir)) {
+      fs.rmSync(workingDir, { recursive: true, force: true });
+    }
+  } catch (error) {
+    console.error("Error cleaning API request directory:", error.message);
+  }
+}
+
+/**
+ * Send a Server-Sent Events (SSE) event to the response.
+ */
+function sendSseEvent(res, event, data) {
+  if (res.writableEnded) return;
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+  if (typeof res.flush === "function") {
+    res.flush();
+  }
+}
 
 // Middleware
 app.use(express.json());
@@ -409,6 +511,294 @@ app.post(
     }
   },
 );
+
+// Programmatic API: transform files or text into an audiobook with streaming progress.
+// This endpoint is protected by an API key and streams Server-Sent Events (SSE).
+app.post(
+  "/api/transform",
+  authenticateApiKey,
+  (req, res, next) => {
+    // Create the per-request directory before multer writes files.
+    const { requestId, requestDir } = createApiRequestDirectory();
+    req.requestId = requestId;
+    req.requestDir = requestDir;
+    next();
+  },
+  apiUpload.array("files"),
+  async (req, res) => {
+    try {
+      const { bookTitle, voice, language, text } = req.body;
+      const files = req.files || [];
+      const hasText = text && text.trim() !== "";
+
+      // Validate request parameters
+      const validation = validateTransformationRequest(
+        bookTitle,
+        voice,
+        language
+      );
+      if (!validation.isValid) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: validation.errors,
+          availableVoices: validation.availableVoices,
+          availableLanguages: validation.availableLanguages,
+        });
+      }
+
+      if (!hasText && files.length === 0) {
+        return res.status(400).json({
+          error: "You must provide either text or at least one image/PDF file.",
+        });
+      }
+
+      const { requestId, requestDir } = req;
+      const pendingDir = path.join(requestDir, "pending");
+      const workingDir = path.join(requestDir, "working");
+      const doneDir = path.join(requestDir, "done");
+      const outputFolder = buildOutputFolderName(bookTitle, language);
+
+      // Set up SSE response
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Request-Id", requestId);
+      res.status(200);
+
+      sendSseEvent(res, "status", {
+        requestId,
+        status: "started",
+        bookTitle,
+        voice,
+        language: language || null,
+        hasText,
+        fileCount: files.length,
+      });
+
+      // Write temp.json so the child pipeline can read its configuration
+      const tempData = {
+        bookTitle,
+        voice,
+        language: language || null,
+      };
+      fs.writeFileSync(
+        path.join(workingDir, "temp.json"),
+        JSON.stringify(tempData, null, 2)
+      );
+
+      // If text is provided, skip OCR by writing it directly to complete.txt
+      if (hasText) {
+        const textOutputPath = path.join(workingDir, "text", "complete.txt");
+        fs.writeFileSync(textOutputPath, text, "utf8");
+      }
+
+      // Determine which pipeline to run and its step tracking
+      const isTextOnly = hasText;
+      const processFile = isTextOnly
+        ? "./src/process.text.mjs"
+        : "./src/process.web.mjs";
+      const stepKeywords = isTextOnly
+        ? ["Step 3", "Step 4", "Step 5", "Step 6", "Step 7"]
+        : ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5", "Step 6", "Step 7"];
+      const pipelineStepCount = language ? stepKeywords.length : stepKeywords.length - 1;
+      const stepNumberOffset = isTextOnly ? 2 : 0;
+
+      const childEnv = {
+        ...process.env,
+        PENDING_DIR: pendingDir,
+        WORKING_DIR: workingDir,
+        DONE_DIR: doneDir,
+      };
+
+      const child = spawn("node", [processFile], {
+        stdio: ["pipe", "pipe", "pipe"],
+        cwd: process.cwd(),
+        env: childEnv,
+      });
+
+      res.on("close", () => {
+        if (child && !child.killed) {
+          child.kill("SIGTERM");
+        }
+      });
+
+      let currentStepIndex = 0;
+      let currentStepProcess = { totalItems: 0, currentItem: 0 };
+      let errorMessage = null;
+
+      child.stdout.on("data", (data) => {
+        const output = data.toString();
+        const lines = output.split("\n").filter((line) => line.trim());
+
+        lines.forEach((line) => {
+          // Try to parse JSON progress messages from the child process
+          if (line.trim().startsWith("{") && line.trim().endsWith("}")) {
+            try {
+              const jsonMessage = JSON.parse(line);
+              if (jsonMessage.type === "STEP_PROGRESS") {
+                currentStepProcess = {
+                  totalItems: jsonMessage.totalItems || 0,
+                  currentItem: jsonMessage.currentItem || 0,
+                };
+              }
+            } catch (e) {
+              // Not valid JSON, ignore
+            }
+          }
+
+          // Track step transitions
+          stepKeywords.forEach((keyword, index) => {
+            if (line.includes(keyword)) {
+              currentStepIndex = index;
+              currentStepProcess = { totalItems: 0, currentItem: 0 };
+            }
+          });
+
+          const stepNumber = currentStepIndex + 1 + stepNumberOffset;
+          const progress = Math.min(
+            100,
+            Math.round((currentStepIndex / pipelineStepCount) * 100)
+          );
+
+          sendSseEvent(res, "progress", {
+            step: stepNumber,
+            totalSteps: pipelineStepCount,
+            progress,
+            message: line.trim(),
+            currentStepProcess,
+          });
+        });
+      });
+
+      child.stderr.on("data", (data) => {
+        const error = data.toString();
+        const lines = error.split("\n").filter((line) => line.trim());
+
+        lines.forEach((line) => {
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.type === "ERROR") {
+              errorMessage = parsed.message;
+              sendSseEvent(res, "error", { message: parsed.message });
+            }
+          } catch (e) {
+            sendSseEvent(res, "message", { text: line, type: "stderr" });
+          }
+        });
+      });
+
+      child.on("error", (error) => {
+        errorMessage = error.message;
+        sendSseEvent(res, "error", { message: `Spawn error: ${error.message}` });
+      });
+
+      child.on("close", async (code) => {
+        if (code === 0 && !errorMessage) {
+          const outputFilePath = path.join(
+            doneDir,
+            outputFolder,
+            `${outputFolder}.mp3`
+          );
+          const outputFileName = `${outputFolder}.mp3`;
+          let fileSize = 0;
+          let downloadUrl = null;
+
+          if (fs.existsSync(outputFilePath)) {
+            fileSize = fs.statSync(outputFilePath).size;
+            downloadUrl = `/api/download/${requestId}/${outputFolder}`;
+          }
+
+          sendSseEvent(res, "complete", {
+            success: true,
+            requestId,
+            bookTitle,
+            voice,
+            language: language || null,
+            outputFile: outputFileName,
+            outputPath: outputFilePath,
+            fileSize,
+            downloadUrl,
+          });
+
+          await cleanupApiRequestDirectory(requestDir);
+        } else {
+          const message =
+            errorMessage || `Process exited with code ${code}`;
+          sendSseEvent(res, "error", { message });
+          await cleanupApiRequestDirectory(requestDir);
+        }
+
+        res.end();
+      });
+    } catch (error) {
+      console.error("Error in /api/transform:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to process transformation request" });
+      } else {
+        sendSseEvent(res, "error", { message: error.message });
+        res.end();
+      }
+    }
+  }
+);
+
+// Download a finished audiobook from an API request.
+app.get("/api/download/:requestId/:filename", authenticateApiKey, (req, res) => {
+  try {
+    const { requestId, filename } = req.params;
+    const baseDir = process.env.API_REQUESTS_DIR || "./src/content/api_requests";
+    const requestDir = path.join(baseDir, requestId);
+    const doneDir = path.join(requestDir, "done");
+
+    if (!fs.existsSync(requestDir)) {
+      return res.status(404).json({ error: "Request not found" });
+    }
+
+    // Expected location: done/{filename}/{filename}.mp3
+    const expectedFilePath = path.join(doneDir, filename, `${filename}.mp3`);
+
+    let filePath = expectedFilePath;
+    if (!fs.existsSync(filePath)) {
+      // Fallback: search recursively for any MP3 in the done directory
+      const mp3Files = findMp3Files(doneDir);
+      if (mp3Files.length === 0) {
+        return res.status(404).json({ error: "Audio file not found" });
+      }
+      filePath = mp3Files[0];
+    }
+
+    const resolvedPath = path.resolve(filePath);
+    const resolvedDoneDir = path.resolve(doneDir);
+    if (!resolvedPath.startsWith(resolvedDoneDir)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    res.download(filePath, path.basename(filePath));
+  } catch (error) {
+    console.error("Error downloading API file:", error);
+    res.status(500).json({ error: "Failed to download file" });
+  }
+});
+
+/**
+ * Recursively find all MP3 files under a directory.
+ */
+function findMp3Files(dir) {
+  const results = [];
+  if (!fs.existsSync(dir)) return results;
+
+  const items = fs.readdirSync(dir);
+  for (const item of items) {
+    const itemPath = path.join(dir, item);
+    const stats = fs.statSync(itemPath);
+    if (stats.isDirectory()) {
+      results.push(...findMp3Files(itemPath));
+    } else if (item.toLowerCase().endsWith(".mp3")) {
+      results.push(itemPath);
+    }
+  }
+  return results;
+}
 
 // Get transformation progress
 app.get("/api/progress", authenticateToken, (req, res) => {
