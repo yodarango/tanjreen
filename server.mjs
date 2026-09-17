@@ -519,12 +519,41 @@ app.post(
   authenticateApiKey,
   (req, res, next) => {
     // Create the per-request directory before multer writes files.
-    const { requestId, requestDir } = createApiRequestDirectory();
-    req.requestId = requestId;
-    req.requestDir = requestDir;
-    next();
+    try {
+      const { requestId, requestDir } = createApiRequestDirectory();
+      req.requestId = requestId;
+      req.requestDir = requestDir;
+      next();
+    } catch (error) {
+      console.error("Error creating API request directory:", error);
+      return res.status(500).json({
+        error: "Failed to initialize the request working directory.",
+        details: error.message,
+      });
+    }
   },
-  apiUpload.array("files"),
+  (req, res, next) => {
+    // Run the multer upload and translate its errors into clear JSON responses
+    // instead of letting them fall through to the generic 500 error page.
+    apiUpload.array("files")(req, res, (err) => {
+      if (!err) return next();
+
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({
+          error: "File upload error.",
+          details: err.message,
+          code: err.code,
+          field: err.field,
+        });
+      }
+
+      // Non-multer errors, e.g. file types rejected by the file filter.
+      return res.status(400).json({
+        error: "File upload rejected.",
+        details: err.message,
+      });
+    });
+  },
   async (req, res) => {
     try {
       const { bookTitle, voice, language, text } = req.body;
@@ -733,7 +762,10 @@ app.post(
     } catch (error) {
       console.error("Error in /api/transform:", error);
       if (!res.headersSent) {
-        res.status(500).json({ error: "Failed to process transformation request" });
+        res.status(500).json({
+          error: "Failed to process transformation request.",
+          details: error.message,
+        });
       } else {
         sendSseEvent(res, "error", { message: error.message });
         res.end();
@@ -1250,6 +1282,30 @@ function startTransformationProcessFromText(language) {
     }
   });
 }
+
+// Global error handler - ensures unexpected errors are returned as clear JSON
+// instead of the default HTML error page, which makes API debugging much easier.
+app.use((err, req, res, next) => {
+  console.error("Unhandled server error:", err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      error: "File upload error.",
+      details: err.message,
+      code: err.code,
+      field: err.field,
+    });
+  }
+
+  res.status(err.status || 500).json({
+    error: "Internal server error.",
+    details: err.message,
+  });
+});
 
 // Start server
 app.listen(PORT, () => {
