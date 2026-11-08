@@ -49,9 +49,14 @@ async function absRequest(config, method, endpoint) {
     );
   }
 
-  // The scan endpoint returns an empty body on success
+  // Some endpoints return JSON, others plain text (e.g. scan returns "OK")
   const text = await response.text();
-  return text ? JSON.parse(text) : null;
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
 }
 
 /**
