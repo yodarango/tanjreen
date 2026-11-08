@@ -1,5 +1,5 @@
-# Use Node.js LTS version
-FROM node:18-bullseye
+# Use Node.js LTS version (bookworm - bullseye is EOL and its packages 404)
+FROM node:18-bookworm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
