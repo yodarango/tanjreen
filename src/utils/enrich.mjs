@@ -130,17 +130,17 @@ export async function generateBookCover(title, description, outputPath) {
   // Keep the image prompt short - a flavor of the book is enough
   const flavor = description.split(/\s+/).slice(0, 120).join(" ");
 
-  // Note: no response_format param - some OpenAI projects reject it.
-  // Handle both possible response shapes (b64_json or a temporary URL).
+  // Note: no response_format param - gpt-image models always return b64_json.
+  // (dall-e models are not available on all OpenAI projects, gpt-image-2 is.)
   const response = await openai.images.generate({
-    model: "dall-e-3",
+    model: "gpt-image-2",
     prompt:
       `Portrait-orientation audiobook cover artwork for a book titled "${title}". ` +
       `The book is about: ${flavor}. ` +
       `Style: clean, professional, atmospheric book cover illustration. ` +
       `Do not include any text, letters, or words in the image.`,
-    size: "1024x1792", // portrait
-    quality: "standard",
+    size: "1024x1536", // portrait
+    quality: "medium",
     n: 1,
   });
 
