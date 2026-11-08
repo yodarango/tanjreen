@@ -130,6 +130,8 @@ export async function generateBookCover(title, description, outputPath) {
   // Keep the image prompt short - a flavor of the book is enough
   const flavor = description.split(/\s+/).slice(0, 120).join(" ");
 
+  // Note: no response_format param - some OpenAI projects reject it.
+  // Handle both possible response shapes (b64_json or a temporary URL).
   const response = await openai.images.generate({
     model: "dall-e-3",
     prompt:
@@ -139,16 +141,29 @@ export async function generateBookCover(title, description, outputPath) {
       `Do not include any text, letters, or words in the image.`,
     size: "1024x1792", // portrait
     quality: "standard",
-    response_format: "b64_json",
     n: 1,
   });
 
-  const b64 = response.data?.[0]?.b64_json;
-  if (!b64) {
+  const datum = response.data?.[0];
+  let rawImage;
+  if (datum?.b64_json) {
+    rawImage = Buffer.from(datum.b64_json, "base64");
+  } else if (datum?.url) {
+    // URL responses are temporary download links - fetch the image right away
+    const imageResponse = await globalThis.fetch(datum.url, {
+      signal: AbortSignal.timeout(120000),
+    });
+    if (!imageResponse.ok) {
+      throw new Error(
+        `Could not download the generated image (HTTP ${imageResponse.status})`,
+      );
+    }
+    rawImage = Buffer.from(await imageResponse.arrayBuffer());
+  } else {
     throw new Error("Image API returned no image");
   }
 
-  const stats = await compressCover(Buffer.from(b64, "base64"), outputPath);
+  const stats = await compressCover(rawImage, outputPath);
   console.log(
     ` - Cover compressed to ${Math.round(stats.bytes / 1024)} KB (${stats.width}px, q${stats.quality})`,
   );
