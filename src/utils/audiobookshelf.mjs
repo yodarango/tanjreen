@@ -1,5 +1,7 @@
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
@@ -30,12 +32,18 @@ function getAbsConfig() {
 }
 
 /** Make an authenticated request to the Audiobookshelf API. */
-async function absRequest(config, method, endpoint) {
+async function absRequest(config, method, endpoint, body = null) {
+  const headers = { Authorization: `Bearer ${config.token}` };
+  if (body !== null) {
+    headers["Content-Type"] = "application/json";
+  }
+
   let response;
   try {
     response = await fetch(`${config.url}${endpoint}`, {
       method,
-      headers: { Authorization: `Bearer ${config.token}` },
+      headers,
+      body: body !== null ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
@@ -106,6 +114,115 @@ export async function triggerAudiobookshelfScan() {
       message: "Audiobookshelf scan triggered successfully",
     })
   );
+
+  return true;
+}
+
+
+/**
+ * Find a library item by its file name (matches on the item's path suffix)
+ * using the library search endpoint.
+ */
+async function findLibraryItemByFilename(config, libraryId, filename) {
+  const query = filename.replace(/\.mp3$/i, "");
+  const data = await absRequest(
+    config,
+    "GET",
+    `/api/libraries/${libraryId}/search?q=${encodeURIComponent(query)}&limit=10`,
+  );
+
+  const books = data?.book || [];
+  for (const entry of books) {
+    const item = entry.libraryItem || {};
+    if (item.path && item.path.endsWith(`/${filename}`)) {
+      return item;
+    }
+  }
+  return null;
+}
+
+/** Upload a cover image file for a library item (multipart form). */
+async function uploadItemCover(config, itemId, coverPath) {
+  const buffer = await fs.promises.readFile(coverPath);
+  const form = new FormData();
+  form.append(
+    "cover",
+    new Blob([buffer], { type: "image/jpeg" }),
+    path.basename(coverPath),
+  );
+
+  // Use the global (undici) fetch here: it accepts spec FormData/Blob bodies,
+  // which node-fetch (used everywhere else in this module) does not
+  let response;
+  try {
+    response = await globalThis.fetch(
+      `${config.url}/api/items/${itemId}/cover`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${config.token}` },
+        body: form,
+        signal: AbortSignal.timeout(60000),
+      },
+    );
+  } catch (error) {
+    throw new Error(`Cover upload failed: ${error.message}`);
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Audiobookshelf cover upload failed (HTTP ${response.status}): ${body || response.statusText}`,
+    );
+  }
+}
+
+/**
+ * After a book is synced: find its library item and attach the description
+ * and cover art. The item lookup retries because the library scan may still
+ * be running when enrichment finishes.
+ */
+export async function updateAudiobookshelfEntry({
+  filename,
+  description,
+  coverPath,
+  maxAttempts = 5,
+  delayMs = 10000,
+}) {
+  const config = getAbsConfig();
+  if (!config) {
+    console.log(" ℹ️  ABS_URL/ABS_TOKEN not configured, skipping record update");
+    return false;
+  }
+
+  const libraryId = await resolveLibraryId(config);
+
+  let item = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    item = await findLibraryItemByFilename(config, libraryId, filename);
+    if (item) break;
+    console.log(
+      ` - Book not found in Audiobookshelf yet (attempt ${attempt}/${maxAttempts}), retrying...`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  if (!item) {
+    throw new Error(
+      `Could not find "${filename}" in Audiobookshelf after scanning`,
+    );
+  }
+
+  if (description) {
+    await absRequest(config, "PATCH", `/api/items/${item.id}/media`, {
+      metadata: { description },
+    });
+    console.log(" ✔ Description set on the Audiobookshelf record");
+  }
+
+  if (coverPath && fs.existsSync(coverPath)) {
+    await uploadItemCover(config, item.id, coverPath);
+    console.log(" ✔ Cover uploaded to the Audiobookshelf record");
+  }
 
   return true;
 }

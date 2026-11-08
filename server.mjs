@@ -1,6 +1,7 @@
 import { validateTransformationRequest } from "./src/utils/validate.mjs";
 import { extractTextFromUrl } from "./src/utils/scrape.mjs";
 import { triggerAudiobookshelfScan } from "./src/utils/audiobookshelf.mjs";
+import { enrichAndUpdateAudiobookshelf } from "./src/utils/enrich.mjs";
 import { authenticateToken } from "./src/middleware/auth.mjs";
 import { authenticateApiKey } from "./src/middleware/apiKey.mjs";
 import { sendCompletionEmail } from "./src/utils/email.mjs";
@@ -1209,8 +1210,21 @@ app.post("/api/content/sync-abs/:filename", authenticateToken, async (req, res) 
 
     res.json({
       success: true,
-      message: `"${baseName}" synced to Audiobookshelf - library scan triggered`,
+      message: `"${baseName}" synced to Audiobookshelf - description and cover art will be generated automatically`,
     });
+
+    // Fire-and-forget: generate a description + cover art from the book's
+    // text, save them next to the mp3/txt, then update the Audiobookshelf
+    // record. Runs in the background - the user can close the page.
+    if (stats.isDirectory()) {
+      enrichAndUpdateAudiobookshelf({
+        title: filename,
+        filename: baseName,
+        textPath: path.join(itemPath, `${filename}.txt`),
+        descriptionPath: path.join(itemPath, `${filename}.description.txt`),
+        coverPath: path.join(itemPath, `${filename}.jpg`),
+      });
+    }
   } catch (error) {
     console.error("Error syncing to Audiobookshelf:", error);
     res

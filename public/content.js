@@ -318,7 +318,7 @@ class ContentLibrary {
       }
 
       alert(
-        `✓ ${data.message}\n\nThe book will appear in Audiobookshelf within a few seconds.`
+        `✓ ${data.message}\n\nThe book will appear in Audiobookshelf within a few seconds. A description and cover art will be generated and added automatically in the next couple of minutes.`
       );
     } catch (error) {
       console.error("Error syncing to Audiobookshelf:", error);
