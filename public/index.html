@@ -251,21 +251,24 @@
               <h3><i class="fas fa-exchange-alt"></i> Input Mode</h3>
               <div class="input-mode-toggle">
                 <button id="modeImages" class="mode-btn active">
-                  <i class="fas fa-images"></i> Images
+                  <i class="fas fa-file"></i> Files
                 </button>
                 <button id="modeText" class="mode-btn">
                   <i class="fas fa-keyboard"></i> Text
+                </button>
+                <button id="modeUrl" class="mode-btn">
+                  <i class="fas fa-link"></i> URL
                 </button>
               </div>
             </div>
 
             <!-- Drag and Drop Zone -->
             <div class="drag-drop-section" id="imagesInputSection">
-              <h3><i class="fas fa-upload"></i> Upload Images</h3>
+              <h3><i class="fas fa-upload"></i> Upload Files</h3>
               <div id="dropZone" class="drop-zone">
                 <div class="drop-zone-content">
                   <i class="fas fa-folder-open drop-icon"></i>
-                  <p class="drop-text">Drag & drop images here</p>
+                  <p class="drop-text">Drag & drop files here</p>
                   <p class="drop-subtext">or click to browse</p>
                   <input
                     type="file"
@@ -300,13 +303,32 @@
               ></textarea>
             </div>
 
+            <!-- URL Input Section -->
+            <div class="text-input-section url-input-section hidden" id="urlInputSection">
+              <h3><i class="fas fa-link"></i> Paste a URL</h3>
+              <input
+                type="url"
+                id="urlInput"
+                class="url-input-area"
+                placeholder="https://example.com/article"
+              />
+              <div class="text-input-info">
+                <i class="fas fa-info-circle"></i>
+                <span
+                  >The page will be scraped and its text narrated. Works best
+                  with articles and blog posts.</span
+                >
+              </div>
+            </div>
+
+
             <div class="images-section" id="imagesSectionDisplay">
-              <h3><i class="fas fa-images"></i> Images to Process</h3>
+              <h3><i class="fas fa-file"></i> Files to Process</h3>
               <div id="imagesList" class="images-list">
-                <div class="loading">Loading images...</div>
+                <div class="loading">Loading files...</div>
               </div>
               <div class="images-count">
-                <span id="imagesCount">0</span> images found
+                <span id="imagesCount">0</span> files found
               </div>
             </div>
 

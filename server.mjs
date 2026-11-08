@@ -1,4 +1,5 @@
 import { validateTransformationRequest } from "./src/utils/validate.mjs";
+import { extractTextFromUrl } from "./src/utils/scrape.mjs";
 import { authenticateToken } from "./src/middleware/auth.mjs";
 import { authenticateApiKey } from "./src/middleware/apiKey.mjs";
 import { sendCompletionEmail } from "./src/utils/email.mjs";
@@ -512,6 +513,115 @@ app.post(
   },
 );
 
+// Start transformation from a URL (scrapes the page, then skips OCR and amalgamation)
+app.post(
+  "/api/start-transformation-from-url",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { bookTitle, voice, language, url } = req.body;
+
+      if (transformationState.isRunning) {
+        return res
+          .status(400)
+          .json({ error: "Transformation already in progress" });
+      }
+
+      // Validate the request parameters
+      const validation = validateTransformationRequest(
+        bookTitle,
+        voice,
+        language,
+      );
+
+      if (!validation.isValid) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: validation.errors,
+          availableVoices: validation.availableVoices,
+          availableLanguages: validation.availableLanguages,
+        });
+      }
+
+      // Validate URL input
+      if (!url || url.trim() === "") {
+        return res.status(400).json({ error: "URL input is required" });
+      }
+
+      // Scrape the page BEFORE starting so failures are reported to the user
+      let scraped;
+      try {
+        console.log(`🌐 Scraping URL: ${url}`);
+        scraped = await extractTextFromUrl(url);
+        console.log(
+          `✅ Scraped ${scraped.text.length} characters from "${scraped.title || scraped.url}"`,
+        );
+      } catch (scrapeError) {
+        console.error("❌ Scraping failed:", scrapeError.message);
+        return res.status(400).json({ error: scrapeError.message });
+      }
+
+      // Tell the state we are starting to run
+      transformationState = {
+        completed: false,
+        isRunning: true,
+        bookTitle: bookTitle,
+        outputPath: null,
+        messages: [],
+        currentStep: 0,
+        progress: 0,
+        error: null,
+        currentStepProcess: {
+          totalItems: 0,
+          currentItem: 0,
+        },
+      };
+
+      // Clean the working directory BEFORE starting the process
+      const workingDir = process.env.WORKING_DIR;
+      await cleanWorkingDirectory(workingDir);
+
+      // Save the scraped text to working directory as complete.txt (for step 3 to process)
+      const workingTextPath = path.join(workingDir, "text", "complete.txt");
+      fs.writeFileSync(workingTextPath, scraped.text, "utf8");
+      console.log(
+        `✅ Saved scraped text to working directory: ${workingTextPath}`,
+      );
+
+      // Write the book title, voice, and language to temp.json
+      const tempData = {
+        bookTitle,
+        voice,
+        language: language || null,
+        skipOCR: true, // Flag to indicate we should skip OCR and amalgamation
+        sourceUrl: scraped.url,
+      };
+
+      fs.writeFileSync(
+        `${workingDir}/temp.json`,
+        JSON.stringify(tempData, null, 2),
+      );
+
+      // Start the transformation process (will skip steps 1 and 2)
+      startTransformationProcessFromText(language);
+
+      res.json({
+        success: true,
+        message: "Transformation started from URL",
+        pageTitle: scraped.title,
+        characters: scraped.text.length,
+        truncated: scraped.truncated,
+      });
+    } catch (error) {
+      console.error("Error starting transformation from URL:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to start transformation from URL" });
+    }
+  },
+);
+
+
 // Programmatic API: transform files or text into an audiobook with streaming progress.
 // This endpoint is protected by an API key and streams Server-Sent Events (SSE).
 app.post(
@@ -813,6 +923,25 @@ app.get("/api/download/:requestId/:filename", authenticateApiKey, (req, res) => 
 });
 
 /**
+ * Recursively check whether a directory contains at least one file.
+ */
+function directoryHasFiles(dir) {
+  if (!fs.existsSync(dir)) return false;
+
+  const items = fs.readdirSync(dir);
+  for (const item of items) {
+    const itemPath = path.join(dir, item);
+    const stats = fs.statSync(itemPath);
+    if (stats.isDirectory()) {
+      if (directoryHasFiles(itemPath)) return true;
+    } else {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Recursively find all MP3 files under a directory.
  */
 function findMp3Files(dir) {
@@ -924,6 +1053,13 @@ app.get("/api/content/download/:filename", authenticateToken, (req, res) => {
       // Download single file
       res.download(itemPath, filename);
     } else if (stats.isDirectory()) {
+      // Refuse to zip an empty folder - it produces an invalid archive
+      if (!directoryHasFiles(itemPath)) {
+        return res
+          .status(400)
+          .json({ error: "This folder is empty - nothing to download" });
+      }
+
       // Create ZIP archive for folder
       const archive = archiver("zip", {
         zlib: { level: 9 }, // Maximum compression
@@ -1124,7 +1260,9 @@ function startTransformationProcess(language) {
         null,
       );
     } else {
-      const errorMessage = `Process exited with code ${code}`;
+      // Prefer the specific error message captured from stderr if available
+      const errorMessage =
+        transformationState.error || `Process exited with code ${code}`;
       transformationState.error = errorMessage;
       transformationState.messages.push({
         text: `❌ Process failed with exit code ${code}`,
@@ -1265,7 +1403,9 @@ function startTransformationProcessFromText(language) {
         null,
       );
     } else {
-      const errorMessage = `Process exited with code ${code}`;
+      // Prefer the specific error message captured from stderr if available
+      const errorMessage =
+        transformationState.error || `Process exited with code ${code}`;
       transformationState.error = errorMessage;
       transformationState.messages.push({
         text: `❌ Process failed with exit code ${code}`,

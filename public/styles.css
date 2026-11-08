@@ -570,7 +570,8 @@ input.danger:focus {
   margin: 25px 0;
 }
 
-.text-input-area {
+.text-input-area,
+.url-input-area {
   width: 100%;
   padding: 15px;
   background: var(--dr-gamma);
@@ -580,19 +581,24 @@ input.danger:focus {
   font-family: var(--dr-font-primary);
   font-size: 14px;
   line-height: 1.6;
-  resize: vertical;
-  min-height: 200px;
   transition: all 0.3s ease;
 }
 
-.text-input-area:focus {
+.text-input-area {
+  resize: vertical;
+  min-height: 200px;
+}
+
+.text-input-area:focus,
+.url-input-area:focus {
   outline: none;
   border-color: var(--dr-epsilon);
   box-shadow: 0 0 15px rgba(255, 107, 53, 0.2);
   background: var(--dr-alpha);
 }
 
-.text-input-area::placeholder {
+.text-input-area::placeholder,
+.url-input-area::placeholder {
   color: var(--dr-rho);
   opacity: 0.7;
 }

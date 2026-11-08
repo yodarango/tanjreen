@@ -56,10 +56,9 @@ export async function processTextToSpeech(voice, bookTitle, language) {
 
     // Check if cleaned text file exists
     if (!fs.existsSync(cleanedTextFile)) {
-      console.log(
-        ` ❌ Cleaned text file not found: ${cleanedTextFile}. Make sure to run the cleaning step first.`
+      throw new Error(
+        `Cleaned text file not found: ${cleanedTextFile}. Make sure to run the cleaning step first.`
       );
-      return;
     }
 
     console.log(
@@ -70,8 +69,7 @@ export async function processTextToSpeech(voice, bookTitle, language) {
     const text = fs.readFileSync(cleanedTextFile, "utf8");
 
     if (text.trim().length === 0) {
-      console.log(" ❌ Cleaned text file is empty");
-      return;
+      throw new Error("Cleaned text file is empty");
     }
 
     console.log(` - Processing cleaned text (${text.length} characters)`);
@@ -133,7 +131,8 @@ export async function processTextToSpeech(voice, bookTitle, language) {
       })
     );
 
-    // Process each chunk
+    // Process each chunk, tracking failures
+    const failedChunks = [];
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
       const chunkAudioFileName = `${chunkIndex + 1}.mp3`;
@@ -172,12 +171,27 @@ export async function processTextToSpeech(voice, bookTitle, language) {
           ` ❌ Error processing chunk ${chunkIndex + 1}:`,
           error.message
         );
+        failedChunks.push({ chunk: chunkIndex + 1, message: error.message });
       }
+    }
+
+    // If every chunk failed, no audio was produced - treat the step as failed
+    if (chunks.length > 0 && failedChunks.length === chunks.length) {
+      throw new Error(
+        `Text-to-speech failed for all ${chunks.length} chunks. First error: ${failedChunks[0].message}`
+      );
+    }
+
+    if (failedChunks.length > 0) {
+      console.log(
+        ` ⚠️  ${failedChunks.length}/${chunks.length} chunks failed - continuing with the rest`
+      );
     }
   } catch (error) {
     console.error(
       " ❌ Fatal error during text-to-speech processing:",
       error.message
     );
+    throw error;
   }
 }

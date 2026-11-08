@@ -4,7 +4,7 @@ class AudiobookConverter {
     this.currentStep = 0;
     this.totalSteps = 5;
     this.authToken = localStorage.getItem("authToken");
-    this.inputMode = "images"; // 'images' or 'text'
+    this.inputMode = "images"; // 'images', 'text', or 'url'
 
     // Check authentication before initializing
     this.checkAuth().then((isAuthenticated) => {
@@ -105,9 +105,12 @@ class AudiobookConverter {
     // Input mode elements
     this.modeImagesBtn = document.getElementById("modeImages");
     this.modeTextBtn = document.getElementById("modeText");
+    this.modeUrlBtn = document.getElementById("modeUrl");
     this.imagesInputSection = document.getElementById("imagesInputSection");
     this.textInputSection = document.getElementById("textInputSection");
     this.textInput = document.getElementById("textInput");
+    this.urlInputSection = document.getElementById("urlInputSection");
+    this.urlInput = document.getElementById("urlInput");
     this.imagesSectionDisplay = document.getElementById("imagesSectionDisplay");
 
     // Drag and drop elements
@@ -125,9 +128,11 @@ class AudiobookConverter {
     );
     this.voiceSelect.addEventListener("change", () => {
       this.updateVoiceSample();
-      // Also validate text input when voice changes (in text mode)
+      // Also validate text/url input when voice changes
       if (this.inputMode === "text") {
         this.validateTextInput();
+      } else if (this.inputMode === "url") {
+        this.validateUrlInput();
       }
     });
     this.languageSelect.addEventListener("change", () =>
@@ -139,10 +144,12 @@ class AudiobookConverter {
       this.cleanPendingContent(),
     );
 
-    // Book title input listener (for text mode validation)
+    // Book title input listener (for text/url mode validation)
     this.bookTitleInput.addEventListener("input", () => {
       if (this.inputMode === "text") {
         this.validateTextInput();
+      } else if (this.inputMode === "url") {
+        this.validateUrlInput();
       }
     });
 
@@ -153,12 +160,22 @@ class AudiobookConverter {
     this.modeTextBtn.addEventListener("click", () =>
       this.switchInputMode("text"),
     );
+    this.modeUrlBtn.addEventListener("click", () =>
+      this.switchInputMode("url"),
+    );
 
     // Text input listeners to enable/disable start button
     this.textInput.addEventListener("input", () => this.validateTextInput());
     this.textInput.addEventListener("paste", () => {
       // Use setTimeout to allow paste to complete before validating
       setTimeout(() => this.validateTextInput(), 10);
+    });
+
+    // URL input listeners to enable/disable start button
+    this.urlInput.addEventListener("input", () => this.validateUrlInput());
+    this.urlInput.addEventListener("paste", () => {
+      // Use setTimeout to allow paste to complete before validating
+      setTimeout(() => this.validateUrlInput(), 10);
     });
 
     // Drag and drop event listeners
@@ -206,26 +223,24 @@ class AudiobookConverter {
   switchInputMode(mode) {
     this.inputMode = mode;
 
+    // Toggle active state on the mode buttons
+    this.modeImagesBtn.classList.toggle("active", mode === "images");
+    this.modeTextBtn.classList.toggle("active", mode === "text");
+    this.modeUrlBtn.classList.toggle("active", mode === "url");
+
+    // Show only the input section for the selected mode
+    this.imagesInputSection.classList.toggle("hidden", mode !== "images");
+    this.textInputSection.classList.toggle("hidden", mode !== "text");
+    this.urlInputSection.classList.toggle("hidden", mode !== "url");
+    this.imagesSectionDisplay.classList.toggle("hidden", mode !== "images");
+
+    // Update start button state for the selected mode
     if (mode === "images") {
-      // Show images section, hide text section
-      this.imagesInputSection.classList.remove("hidden");
-      this.textInputSection.classList.add("hidden");
-      this.imagesSectionDisplay.classList.remove("hidden");
-      this.modeImagesBtn.classList.add("active");
-      this.modeTextBtn.classList.remove("active");
-
-      // Update start button state based on images
       this.loadImages();
-    } else {
-      // Show text section, hide images section
-      this.imagesInputSection.classList.add("hidden");
-      this.textInputSection.classList.remove("hidden");
-      this.imagesSectionDisplay.classList.add("hidden");
-      this.modeImagesBtn.classList.remove("active");
-      this.modeTextBtn.classList.add("active");
-
-      // Update start button state based on text
+    } else if (mode === "text") {
       this.validateTextInput();
+    } else {
+      this.validateUrlInput();
     }
   }
 
@@ -247,6 +262,26 @@ class AudiobookConverter {
       this.startBtn.disabled = true;
     }
   }
+
+  validateUrlInput() {
+    const url = this.urlInput.value.trim();
+    const bookTitle = this.bookTitleInput.value.trim();
+    const voice = this.voiceSelect.value;
+
+    // Enable start button if we have a URL, title, and voice
+    if (
+      url &&
+      bookTitle &&
+      voice &&
+      voice !== "--- select a voice ---" &&
+      !this.isProcessing
+    ) {
+      this.startBtn.disabled = false;
+    } else {
+      this.startBtn.disabled = true;
+    }
+  }
+
 
   setupDragAndDrop() {
     // Prevent default drag behaviors
@@ -332,7 +367,7 @@ class AudiobookConverter {
 
     try {
       // Step 1: Clear pending directory first
-      this.uploadProgressText.textContent = "Clearing old images...";
+      this.uploadProgressText.textContent = "Clearing old files...";
       this.uploadProgressFill.style.width = "25%";
 
       const clearResponse = await fetch("/api/clear-pending", {
@@ -368,7 +403,7 @@ class AudiobookConverter {
 
       // Complete progress
       this.uploadProgressFill.style.width = "100%";
-      this.uploadProgressText.textContent = `✓ Uploaded ${result.files.length} images successfully!`;
+      this.uploadProgressText.textContent = `✓ Uploaded ${result.files.length} files successfully!`;
 
       // Wait a moment then hide progress and reload images
       setTimeout(() => {
@@ -452,7 +487,7 @@ class AudiobookConverter {
 
   displayImages(images) {
     if (images.length === 0) {
-      this.imagesList.innerHTML = '<div class="loading">No images found</div>';
+      this.imagesList.innerHTML = '<div class="loading">No files found</div>';
       return;
     }
 
@@ -487,6 +522,14 @@ class AudiobookConverter {
       }
     }
 
+    if (this.inputMode === "url") {
+      const url = this.urlInput.value.trim();
+      if (!url) {
+        alert("Please enter a URL");
+        return;
+      }
+    }
+
     this.isProcessing = true;
     this.startBtn.disabled = true;
     this.startBtn.innerHTML =
@@ -512,6 +555,35 @@ class AudiobookConverter {
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      } else if (this.inputMode === "url") {
+        // Use URL scraping endpoint
+        const response = await fetch("/api/start-transformation-from-url", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...this.getAuthHeaders(),
+          },
+          body: JSON.stringify({
+            bookTitle: bookTitle,
+            voice: voice,
+            language: language || null,
+            url: this.urlInput.value.trim(),
+          }),
+        });
+
+        if (!response.ok) {
+          // Surface the server's scrape error (invalid URL, no text found, etc.)
+          let message = `HTTP error! status: ${response.status}`;
+          try {
+            const data = await response.json();
+            if (data.error) {
+              message = data.error;
+            }
+          } catch (e) {
+            // Keep the default message
+          }
+          throw new Error(message);
         }
       } else {
         // Use images endpoint (original flow)

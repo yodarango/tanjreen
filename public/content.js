@@ -169,6 +169,12 @@ class ContentLibrary {
     const downloadBtn = card.querySelector("[data-download-btn]");
     const deleteBtn = card.querySelector("[data-delete-btn]");
 
+    // Disable download for empty folders (zipping one produces an invalid archive)
+    if (item.type === "folder" && item.fileCount === 0) {
+      downloadBtn.disabled = true;
+      downloadText.textContent = "Empty Folder";
+    }
+
     downloadBtn.addEventListener("click", () =>
       this.downloadItem(item.name, downloadBtn)
     );

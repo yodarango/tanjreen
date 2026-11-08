@@ -22,6 +22,8 @@ services:
       - ./src/content:/app/src/content
       # Optional: mount .env file
       - ./.env:/app/.env:ro
+      # Audiobookshelf library - step 7 copies finished MP3s here (TRANSFER_TO_PATH)
+      - /var/www/repos/audiobookshelf/audiobooks:/var/www/repos/audiobookshelf/audiobooks
     restart: unless-stopped
     networks:
       - tanjreen-network

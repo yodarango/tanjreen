@@ -54,5 +54,10 @@ async function startProcessFromText() {
 }
 
 // Run the main function
-startProcessFromText().catch(console.error);
+startProcessFromText().catch((error) => {
+  // Emit a parseable error so the server can surface the real failure reason
+  console.error(JSON.stringify({ type: "ERROR", message: error.message }));
+  console.error(error);
+  process.exit(1);
+});
 
