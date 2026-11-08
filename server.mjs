@@ -1,5 +1,6 @@
 import { validateTransformationRequest } from "./src/utils/validate.mjs";
 import { extractTextFromUrl } from "./src/utils/scrape.mjs";
+import { triggerAudiobookshelfScan } from "./src/utils/audiobookshelf.mjs";
 import { authenticateToken } from "./src/middleware/auth.mjs";
 import { authenticateApiKey } from "./src/middleware/apiKey.mjs";
 import { sendCompletionEmail } from "./src/utils/email.mjs";
@@ -1130,6 +1131,94 @@ app.delete("/api/content/delete/:filename", authenticateToken, (req, res) => {
     res.status(500).json({ error: "Failed to delete item" });
   }
 });
+
+// Manually sync a finished audiobook to Audiobookshelf:
+// copies the MP3 into the ABS library folder and triggers a library scan
+app.post("/api/content/sync-abs/:filename", authenticateToken, async (req, res) => {
+  try {
+    const filename = req.params.filename;
+
+    // Only available in production with transfer + ABS configured
+    const transferPath = process.env.TRANSFER_TO_PATH;
+    if (process.env.NODE_ENV !== "production" || !transferPath) {
+      return res.status(400).json({
+        error:
+          "Audiobookshelf sync is only available in production with TRANSFER_TO_PATH configured",
+      });
+    }
+    if (!process.env.ABS_URL || !process.env.ABS_TOKEN) {
+      return res.status(400).json({
+        error: "Audiobookshelf is not configured (ABS_URL/ABS_TOKEN missing)",
+      });
+    }
+
+    const doneDir = process.env.DONE_DIR;
+    const itemPath = path.join(doneDir, filename);
+
+    // Security check: ensure the item is within the done directory
+    const resolvedPath = path.resolve(itemPath);
+    const resolvedDoneDir = path.resolve(doneDir);
+    if (!resolvedPath.startsWith(resolvedDoneDir)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    if (!fs.existsSync(itemPath)) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    // Resolve the source MP3: folder/<name>.mp3, first mp3 inside the folder, or a bare .mp3 file
+    let sourceFile;
+    const stats = fs.statSync(itemPath);
+    if (stats.isDirectory()) {
+      sourceFile = path.join(itemPath, `${filename}.mp3`);
+      if (!fs.existsSync(sourceFile)) {
+        const mp3 = fs
+          .readdirSync(itemPath)
+          .find((f) => f.toLowerCase().endsWith(".mp3"));
+        if (!mp3) {
+          return res.status(400).json({ error: "No MP3 found in this folder" });
+        }
+        sourceFile = path.join(itemPath, mp3);
+      }
+    } else if (filename.toLowerCase().endsWith(".mp3")) {
+      sourceFile = itemPath;
+    } else {
+      return res
+        .status(400)
+        .json({ error: "Only audiobook folders or MP3 files can be synced" });
+    }
+
+    const baseName = path.basename(sourceFile);
+    const tempDest = path.join(transferPath, `.tanjreen-sync-${baseName}.tmp`);
+    const finalDest = path.join(transferPath, baseName);
+
+    // Atomic publish: copy to a hidden temp name, then rename into place so the
+    // Audiobookshelf folder watcher never sees a partially written file
+    fs.copyFileSync(sourceFile, tempDest);
+    fs.renameSync(tempDest, finalDest);
+    console.log(`📚 Synced ${baseName} to Audiobookshelf library`);
+
+    // Trigger a scan now, plus a follow-up after the watcher debounce window
+    // to override any watcher race that could mark the item missing
+    await triggerAudiobookshelfScan();
+    setTimeout(() => {
+      triggerAudiobookshelfScan().catch((e) =>
+        console.error("Follow-up Audiobookshelf scan failed:", e.message),
+      );
+    }, 20000);
+
+    res.json({
+      success: true,
+      message: `"${baseName}" synced to Audiobookshelf - library scan triggered`,
+    });
+  } catch (error) {
+    console.error("Error syncing to Audiobookshelf:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to sync to Audiobookshelf: " + error.message });
+  }
+});
+
 
 // This is in charge of running every single part of the process and update the global state
 function startTransformationProcess(language) {

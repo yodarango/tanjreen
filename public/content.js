@@ -168,11 +168,24 @@ class ContentLibrary {
     // Add event listeners
     const downloadBtn = card.querySelector("[data-download-btn]");
     const deleteBtn = card.querySelector("[data-delete-btn]");
+    const syncBtn = card.querySelector("[data-sync-btn]");
 
     // Disable download for empty folders (zipping one produces an invalid archive)
     if (item.type === "folder" && item.fileCount === 0) {
       downloadBtn.disabled = true;
       downloadText.textContent = "Empty Folder";
+    }
+
+    // Sync to Audiobookshelf is only available for folders with files / MP3s
+    const isSyncable =
+      item.name.toLowerCase().endsWith(".mp3") ||
+      (item.type === "folder" && item.fileCount > 0);
+    if (isSyncable) {
+      syncBtn.addEventListener("click", () =>
+        this.syncToAudiobookshelf(item.name, syncBtn)
+      );
+    } else {
+      syncBtn.classList.add("hidden");
     }
 
     downloadBtn.addEventListener("click", () =>
@@ -273,6 +286,45 @@ class ContentLibrary {
       console.error("Error downloading item:", error);
       alert("Error downloading: " + error.message);
       // Restore button state on error
+      buttonElement.disabled = false;
+      buttonElement.innerHTML = originalContent;
+    }
+  }
+
+  async syncToAudiobookshelf(filename, buttonElement) {
+    // Store original button content
+    const originalContent = buttonElement.innerHTML;
+
+    try {
+      // Disable button and show loading state
+      buttonElement.disabled = true;
+      buttonElement.innerHTML = `
+        <span class="spinner"></span>
+        Syncing...
+      `;
+
+      const response = await fetch(
+        `/api/content/sync-abs/${encodeURIComponent(filename)}`,
+        {
+          method: "POST",
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+
+      alert(
+        `✓ ${data.message}\n\nThe book will appear in Audiobookshelf within a few seconds.`
+      );
+    } catch (error) {
+      console.error("Error syncing to Audiobookshelf:", error);
+      alert("✗ Sync failed: " + error.message);
+    } finally {
+      // Restore button state
       buttonElement.disabled = false;
       buttonElement.innerHTML = originalContent;
     }
