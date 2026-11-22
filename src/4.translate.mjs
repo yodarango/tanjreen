@@ -55,7 +55,7 @@ async function translateText(text, language) {
         type: "STEP_PROGRESS",
         totalItems: chunks.length,
         currentItem: 0,
-      })
+      }),
     );
 
     const translations = [];
@@ -67,7 +67,7 @@ async function translateText(text, language) {
       console.log(
         `   - Translating chunk ${i + 1}/${chunks.length} (${
           chunk.length
-        } chars)`
+        } chars)`,
       );
 
       // Send progress update
@@ -76,7 +76,7 @@ async function translateText(text, language) {
           type: "STEP_PROGRESS",
           totalItems: chunks.length,
           currentItem: i + 1,
-        })
+        }),
       );
 
       const response = await openai.chat.completions.create({
@@ -136,7 +136,7 @@ export async function translate(bookTitle, language) {
     console.log(` - Translating to ${language}...`);
     const translatedText = await translateText(originalText, language);
     console.log(
-      ` ✔ Translation completed: ${translatedText.length} characters`
+      ` ✔ Translation completed: ${translatedText.length} characters`,
     );
 
     // Save the translated text
@@ -156,7 +156,7 @@ export async function translate(bookTitle, language) {
 
     const outputPath = path.join(
       doneDirForBookTitle,
-      `${sanitizedBookTitle}.txt`
+      `${sanitizedBookTitle}.txt`,
     );
 
     fs.writeFileSync(outputPath, translatedText, "utf8");

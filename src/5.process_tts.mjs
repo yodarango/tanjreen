@@ -138,6 +138,12 @@ export async function processTextToSpeech(voice, bookTitle, language) {
       const chunkAudioFileName = `${chunkIndex + 1}.mp3`;
       const chunkAudioPath = path.join(audioDir, chunkAudioFileName);
 
+      // A retry runs in the same working directory; keep completed chunks.
+      if (fs.existsSync(chunkAudioPath) && fs.statSync(chunkAudioPath).size > 0) {
+        console.log(`   ✔ Reusing audio: ${chunkAudioFileName}`);
+        continue;
+      }
+
       console.log(
         `   - Creating audio for chunk ${chunkIndex + 1}/${
           chunks.length
@@ -163,7 +169,9 @@ export async function processTextToSpeech(voice, bookTitle, language) {
         console.log(`   - Response for chunk: ${chunkIndex + 1}: \n ${mp3}`);
 
         const buffer = Buffer.from(await mp3.arrayBuffer());
-        await fs.promises.writeFile(chunkAudioPath, buffer);
+        const temporaryPath = `${chunkAudioPath}.tmp`;
+        await fs.promises.writeFile(temporaryPath, buffer);
+        await fs.promises.rename(temporaryPath, chunkAudioPath);
 
         console.log(`   ✔ Saved audio: ${chunkAudioFileName}`);
       } catch (error) {
@@ -175,16 +183,9 @@ export async function processTextToSpeech(voice, bookTitle, language) {
       }
     }
 
-    // If every chunk failed, no audio was produced - treat the step as failed
-    if (chunks.length > 0 && failedChunks.length === chunks.length) {
-      throw new Error(
-        `Text-to-speech failed for all ${chunks.length} chunks. First error: ${failedChunks[0].message}`
-      );
-    }
-
     if (failedChunks.length > 0) {
-      console.log(
-        ` ⚠️  ${failedChunks.length}/${chunks.length} chunks failed - continuing with the rest`
+      throw new Error(
+        `Text-to-speech failed for ${failedChunks.length} of ${chunks.length} chunks. First error: ${failedChunks[0].message}`
       );
     }
   } catch (error) {

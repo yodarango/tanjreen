@@ -219,6 +219,60 @@ let transformationState = {
     currentItem: 0,
   },
 };
+let interactiveChild = null;
+
+function attachInteractiveWorker(child, language, fromText) {
+  interactiveChild = child;
+  transformationState.language = language || null;
+  transformationState.fromText = fromText;
+  transformationState.paused = false;
+  child.on("message", (message) => {
+    if (interactiveChild !== child) return;
+    if (message.type === "STEP_START") {
+      const steps = [1, 2, 3, ...(language ? [4] : []), 5, 6, 7].filter(
+        (step) => !fromText || step >= 3,
+      );
+      transformationState.currentStep = Math.min(message.step - 1, 5);
+      transformationState.progress = (steps.indexOf(message.step) / steps.length) * 100;
+      transformationState.currentStepProcess = { totalItems: 0, currentItem: 0 };
+      transformationState.paused = false;
+      transformationState.failedStep = null;
+      transformationState.error = null;
+    } else if (message.type === "STEP_ERROR") {
+      transformationState.paused = true;
+      transformationState.failedStep = message.step;
+      transformationState.error = message.message;
+    }
+  });
+  child.on("close", () => {
+    if (interactiveChild === child) {
+      interactiveChild = null;
+      transformationState.paused = false;
+    }
+  });
+}
+
+app.post("/api/retry-step", authenticateToken, (req, res) => {
+  const child = interactiveChild;
+  if (!transformationState.isRunning || !transformationState.paused || !child?.connected) {
+    return res.status(409).json({ error: "No paused step is available to retry" });
+  }
+  const step = transformationState.failedStep;
+  const previousError = transformationState.error;
+  transformationState.paused = false;
+  transformationState.error = null;
+  child.send({ type: "RETRY_STEP", step }, (error) => {
+    if (error) {
+      if (interactiveChild === child && child.connected) {
+        transformationState.paused = true;
+        transformationState.error = previousError;
+      }
+      console.error("Could not send retry command:", error);
+      return res.status(503).json({ error: "Could not send retry command to the worker" });
+    }
+    res.json({ success: true, step });
+  });
+});
 
 // API Routes
 
@@ -293,6 +347,9 @@ app.get("/api/images", authenticateToken, (req, res) => {
 // Clear pending directory endpoint - must be called before upload
 app.post("/api/clear-pending", authenticateToken, (req, res) => {
   try {
+    if (transformationState.isRunning) {
+      return res.status(409).json({ error: "Cannot clear files during a transformation" });
+    }
     const pendingDir = process.env.PENDING_DIR;
 
     console.log("🗑️  Clearing pending directory...");
@@ -323,6 +380,12 @@ app.post("/api/clear-pending", authenticateToken, (req, res) => {
 app.post(
   "/api/upload-images",
   authenticateToken,
+  (req, res, next) => {
+    if (transformationState.isRunning) {
+      return res.status(409).json({ error: "Cannot upload files during a transformation" });
+    }
+    next();
+  },
   upload.array("images"),
   (req, res) => {
     try {
@@ -348,6 +411,7 @@ app.post(
 
 // Once the user click start transformation, this will be ran
 app.post("/api/start-transformation", authenticateToken, async (req, res) => {
+  let started = false;
   try {
     const { bookTitle, voice, language, sanitize = true } = req.body;
 
@@ -388,6 +452,7 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
         currentItem: 0,
       },
     };
+    started = true;
 
     // Clean the working directory BEFORE starting the process
     const workingDir = process.env.WORKING_DIR;
@@ -411,6 +476,10 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
 
     res.json({ success: true, message: "Transformation started" });
   } catch (error) {
+    if (started) {
+      transformationState.isRunning = false;
+      transformationState.error = error.message;
+    }
     console.error("Error starting transformation:", error);
     res.status(500).json({ error: "Failed to start transformation" });
   }
@@ -421,6 +490,7 @@ app.post(
   "/api/start-transformation-from-text",
   authenticateToken,
   async (req, res) => {
+    let started = false;
     try {
       const { bookTitle, voice, language, text, sanitize = true } = req.body;
 
@@ -466,6 +536,7 @@ app.post(
           currentItem: 0,
         },
       };
+      started = true;
 
       // Clean the working directory BEFORE starting the process
       const workingDir = process.env.WORKING_DIR;
@@ -509,6 +580,10 @@ app.post(
 
       res.json({ success: true, message: "Transformation started from text" });
     } catch (error) {
+      if (started) {
+        transformationState.isRunning = false;
+        transformationState.error = error.message;
+      }
       console.error("Error starting transformation from text:", error);
       res
         .status(500)
@@ -522,6 +597,7 @@ app.post(
   "/api/start-transformation-from-url",
   authenticateToken,
   async (req, res) => {
+    let started = false;
     try {
       const { bookTitle, voice, language, url, sanitize = true } = req.body;
 
@@ -565,6 +641,10 @@ app.post(
         return res.status(400).json({ error: scrapeError.message });
       }
 
+      if (transformationState.isRunning) {
+        return res.status(400).json({ error: "Transformation already in progress" });
+      }
+
       // Tell the state we are starting to run
       transformationState = {
         completed: false,
@@ -580,6 +660,7 @@ app.post(
           currentItem: 0,
         },
       };
+      started = true;
 
       // Clean the working directory BEFORE starting the process
       const workingDir = process.env.WORKING_DIR;
@@ -618,6 +699,10 @@ app.post(
         truncated: scraped.truncated,
       });
     } catch (error) {
+      if (started) {
+        transformationState.isRunning = false;
+        transformationState.error = error.message;
+      }
       console.error("Error starting transformation from URL:", error);
       res
         .status(500)
@@ -1243,29 +1328,16 @@ app.post("/api/content/sync-abs/:filename", authenticateToken, async (req, res) 
 function startTransformationProcess(language) {
   // pass the book title and voice as a func param
   const child = spawn("node", ["./src/process.web.mjs"], {
-    stdio: ["pipe", "pipe", "pipe"],
+    stdio: ["pipe", "pipe", "pipe", "ipc"],
     cwd: process.cwd(),
   });
+  attachInteractiveWorker(child, language, false);
 
   // Check if spawn was successful
   if (!child) {
     console.error("❌ Failed to spawn child process");
     return;
   }
-
-  let currentStep = 0;
-  const stepKeywords = [
-    "Step 1",
-    "Step 2",
-    "Step 3",
-    "Step 4",
-    "Step 5",
-    "Step 6",
-    "Step 7",
-  ];
-
-  // Calculate total steps (skip Step 4 if no translation)
-  const totalSteps = language ? 7 : 6;
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
@@ -1292,22 +1364,6 @@ function startTransformationProcess(language) {
         }
       }
 
-      // Check for step progression
-      stepKeywords.forEach((keyword, index) => {
-        if (line.includes(keyword)) {
-          currentStep = index;
-          transformationState.currentStep = currentStep;
-
-          // Calculate progress based on actual total steps
-          transformationState.progress = (currentStep / totalSteps) * 100;
-
-          // Reset sub-step progress when moving to a new step
-          transformationState.currentStepProcess = {
-            totalItems: 0,
-            currentItem: 0,
-          };
-        }
-      });
     });
   });
 
@@ -1352,7 +1408,7 @@ function startTransformationProcess(language) {
     if (code === 0) {
       transformationState.completed = true;
       transformationState.progress = 100;
-      transformationState.currentStep = totalSteps;
+      transformationState.currentStep = 7;
 
       console.log(transformationState);
       transformationState.messages.push({
@@ -1392,22 +1448,16 @@ function startTransformationProcess(language) {
 function startTransformationProcessFromText(language) {
   // Use a different process file that skips steps 1 and 2
   const child = spawn("node", ["./src/process.text.mjs"], {
-    stdio: ["pipe", "pipe", "pipe"],
+    stdio: ["pipe", "pipe", "pipe", "ipc"],
     cwd: process.cwd(),
   });
+  attachInteractiveWorker(child, language, true);
 
   // Check if spawn was successful
   if (!child) {
     console.error("❌ Failed to spawn child process");
     return;
   }
-
-  let currentStep = 0;
-  // Skip steps 1 and 2, start from step 3
-  const stepKeywords = ["Step 3", "Step 4", "Step 5", "Step 6", "Step 7"];
-
-  // Calculate total steps (5 steps instead of 7, or 4 if no translation)
-  const totalSteps = language ? 5 : 4;
 
   child.stdout.on("data", (data) => {
     const output = data.toString();
@@ -1434,23 +1484,6 @@ function startTransformationProcessFromText(language) {
         }
       }
 
-      // Check for step progression
-      stepKeywords.forEach((keyword, index) => {
-        if (line.includes(keyword)) {
-          currentStep = index;
-          // Add 2 to currentStep to account for skipped steps in UI
-          transformationState.currentStep = currentStep + 2;
-
-          // Calculate progress based on actual total steps
-          transformationState.progress = (currentStep / totalSteps) * 100;
-
-          // Reset sub-step progress when moving to a new step
-          transformationState.currentStepProcess = {
-            totalItems: 0,
-            currentItem: 0,
-          };
-        }
-      });
     });
   });
 
@@ -1495,7 +1528,7 @@ function startTransformationProcessFromText(language) {
     if (code === 0) {
       transformationState.completed = true;
       transformationState.progress = 100;
-      transformationState.currentStep = totalSteps + 2; // Add 2 for skipped steps
+      transformationState.currentStep = 7;
 
       console.log(transformationState);
       transformationState.messages.push({

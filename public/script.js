@@ -5,6 +5,7 @@ class AudiobookConverter {
     this.totalSteps = 5;
     this.authToken = localStorage.getItem("authToken");
     this.inputMode = "images"; // 'images', 'text', or 'url'
+    this.retryPending = false;
 
     // Check authentication before initializing
     this.checkAuth().then((isAuthenticated) => {
@@ -92,6 +93,12 @@ class AudiobookConverter {
     this.bookTitleInput = document.getElementById("bookTitle");
     this.voiceSelect = document.getElementById("voiceSelect");
     this.languageSelect = document.getElementById("languageSelect");
+    this.sanitizeToggle = document.getElementById("sanitizeToggle");
+    this.retryPanel = document.getElementById("retryPanel");
+    this.transformationStatusTitle = document.getElementById("transformationStatusTitle");
+    this.transformationStatusText = document.getElementById("transformationStatusText");
+    this.retryError = document.getElementById("retryError");
+    this.retryStepBtn = document.getElementById("retryStep");
     this.playVoiceSampleBtn = document.getElementById("playVoiceSample");
     this.imagesList = document.getElementById("imagesList");
     this.imagesCount = document.getElementById("imagesCount");
@@ -126,6 +133,7 @@ class AudiobookConverter {
 
   setupEventListeners() {
     this.startBtn.addEventListener("click", () => this.startTransformation());
+    this.retryStepBtn.addEventListener("click", () => this.retryFailedStep());
     this.playVoiceSampleBtn.addEventListener("click", () =>
       this.playVoiceSample(),
     );
@@ -508,6 +516,7 @@ class AudiobookConverter {
     const bookTitle = this.bookTitleInput.value.trim();
     const voice = this.voiceSelect.value;
     const language = this.languageSelect.value;
+    const sanitize = this.sanitizeToggle.checked;
 
     if (!bookTitle) {
       window.AppUI.warning("Please enter a book title.");
@@ -557,6 +566,7 @@ class AudiobookConverter {
             voice: voice,
             language: language || null,
             text: this.textInput.value.trim(),
+            sanitize,
           }),
         });
 
@@ -606,7 +616,6 @@ class AudiobookConverter {
             voice: voice,
             language: language || null,
             sanitize,
-            sanitize,
           }),
         });
 
@@ -632,8 +641,18 @@ class AudiobookConverter {
       });
       const data = await response.json();
 
+      document.getElementById("step-translate").classList.toggle("hidden", !data.language);
       this.updateProgress(data.progress);
-      this.updateSteps(data.currentStep, data.currentStepProcess);
+      this.updateSteps(data.currentStep, data.currentStepProcess, data.paused);
+      this.retryPanel.classList.toggle("hidden", !data.paused);
+      this.transformationStatusTitle.textContent = data.paused ? "Transformation paused" : "Transformation in progress";
+      this.transformationStatusText.textContent = data.paused
+        ? "Processing will continue after you retry the failed step."
+        : "Your file is being processed. We’ll email you when it’s done.";
+      if (data.paused) {
+        this.retryError.textContent = `Step ${data.failedStep} failed: ${data.error}. Fix the problem, then retry.`;
+        this.retryStepBtn.disabled = this.retryPending;
+      }
 
       if (data.completed) {
         this.resetStartButton();
@@ -645,7 +664,7 @@ class AudiobookConverter {
         );
         this.hideAllSubsteps();
         window.AppUI.success("Audiobook transformation completed successfully.");
-      } else if (data.error) {
+      } else if (data.error && !data.paused) {
         this.resetStartButton();
         this.hideTransformationInProgress();
         this.hideAllSubsteps();
@@ -661,12 +680,34 @@ class AudiobookConverter {
     }
   }
 
+  async retryFailedStep() {
+    if (this.retryPending) return;
+    this.retryPending = true;
+    this.retryStepBtn.disabled = true;
+    try {
+      const response = await fetch("/api/retry-step", {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Retry failed");
+      }
+      this.retryPanel.classList.add("hidden");
+    } catch (error) {
+      window.AppUI.error("Could not retry: " + error.message);
+      this.retryStepBtn.disabled = false;
+    } finally {
+      this.retryPending = false;
+    }
+  }
+
   updateProgress(progress) {
     this.progressFill.style.width = progress + "%";
     this.progressText.textContent = Math.round(progress) + "%";
   }
 
-  updateSteps(currentStep, currentStepProcess) {
+  updateSteps(currentStep, currentStepProcess, paused = false) {
     const steps = [
       "step-ocr",
       "step-combine",
@@ -709,8 +750,8 @@ class AudiobookConverter {
       } else if (index === currentStep) {
         this.updateStepStatus(
           stepId,
-          "active",
-          '<i class="fas fa-spinner fa-spin"></i>',
+          paused ? "failed" : "active",
+          paused ? '<i class="fas fa-exclamation-circle"></i>' : '<i class="fas fa-spinner fa-spin"></i>',
         );
         // Update substep progress for current step
         if (currentStepProcess && currentStepProcess.totalItems > 0) {

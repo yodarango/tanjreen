@@ -245,13 +245,12 @@
                 <option value="hebrew">Hebrew</option>
                 <option value="thai">Thai</option>
               </select>
+            </div>
             <div class="input-group sanitize-option">
-              <label for="sanitizeToggle">
+              <label for="sanitizeToggle" class="sanitize-switch-label">
                 <input type="checkbox" id="sanitizeToggle" checked />
-                Sanitize
-              </label>
-              <small>Use AI to clean and prepare the text before narration.</small>
                 <span class="sanitize-switch-track" aria-hidden="true"></span>
+                Sanitize
               </label>
               <small>Use AI to clean and prepare the text before narration.</small>
             </div>
@@ -355,8 +354,12 @@
 
             <div id="transformationInProgress" class="transformation-in-progress hidden" role="status" aria-live="polite">
               <img src="/scribe.webp" alt="Scribe working on your audiobook" />
-              <h2>Transformation in progress</h2>
-              <p>Your file is being processed. We’ll email you when it’s done.</p>
+              <h2 id="transformationStatusTitle">Transformation in progress</h2>
+              <p id="transformationStatusText">Your file is being processed. We’ll email you when it’s done.</p>
+              <div id="retryPanel" class="retry-panel hidden">
+                <p id="retryError"></p>
+                <button id="retryStep" class="btn primary" type="button"><i class="fas fa-redo"></i> Retry failed step</button>
+              </div>
             </div>
           </div>
 

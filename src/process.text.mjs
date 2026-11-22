@@ -4,6 +4,7 @@ import { cleanCompleteText } from "./3.sanitize_text.mjs";
 import { transferFile } from "./7.transfer_file.mjs";
 import { translate } from "./4.translate.mjs";
 import { copySourceText } from "./utils/prepare_text.mjs";
+import { runStep, disconnectWorker } from "./utils/retry_step.mjs";
 import fs from "fs";
 import {
   logThree,
@@ -38,25 +39,27 @@ async function startProcessFromText() {
   console.log(`🌍 Language: ${language || "none"}`);
 
   // Step 3: Clean text with AI
-  await logThree(sanitize ? cleanCompleteText : copySourceText, bookTitle);
+  await runStep(3, () => logThree(sanitize ? cleanCompleteText : copySourceText, bookTitle));
 
   // Step 4 (optional): Translate text if language is specified
   if (language && language !== null && language !== "") {
-    await logFour(translate, bookTitle, language);
+    await runStep(4, () => logFour(translate, bookTitle, language));
   }
 
   // Step 5: Convert text to speech
-  await logFive(processTextToSpeech, voice, bookTitle, language);
+  await runStep(5, () => logFive(processTextToSpeech, voice, bookTitle, language));
 
   // Step 6: Concatenate audio files
-  await logSix(concatenateAudioFiles, bookTitle, language);
+  await runStep(6, () => logSix(concatenateAudioFiles, bookTitle, language));
 
   // Step 7: Transfer file to destination (production only)
-  await logSeven(transferFile, bookTitle, language);
+  await runStep(7, () => logSeven(transferFile, bookTitle, language));
 }
 
 // Run the main function
-startProcessFromText().catch((error) => {
+startProcessFromText().then(() => {
+  disconnectWorker();
+}).catch((error) => {
   // Emit a parseable error so the server can surface the real failure reason
   console.error(JSON.stringify({ type: "ERROR", message: error.message }));
   console.error(error);

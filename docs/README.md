@@ -171,11 +171,21 @@ GET  /api/voices              - List available TTS voices
 GET  /api/languages           - List available translation languages
 GET  /api/completed           - List completed audiobooks
 GET  /api/progress            - Get transformation progress
+POST /api/retry-step          - Retry the paused step of the interactive transformation
 POST /api/clear-pending       - Clear pending directory
 POST /api/upload-images       - Upload images (multipart/form-data)
 POST /api/start-transformation - Start the transformation process
 GET  /api/download/:folder/:file - Download completed files
 ```
+
+Interactive transformations pause when a pipeline step fails. The progress
+screen shows the error and a **Retry failed step** button; retry reruns that
+step without rerunning earlier steps. Successfully generated TTS chunks are
+reused. Retrying other steps may repeat their work and API calls. Paused jobs
+are held in the worker's memory and cannot be resumed after a server restart.
+Only one interactive transformation can be active or paused at a time. The
+programmatic streaming API reports errors and ends the request instead of
+waiting for an interactive retry. Cancellation is not yet implemented.
 
 ---
 

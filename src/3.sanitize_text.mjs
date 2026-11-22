@@ -94,8 +94,7 @@ ${textChunk}`;
   } catch (error) {
     console.error(` ❌ Error cleaning chunk ${chunkIndex + 1}:`, error.message);
 
-    // Return original text if cleaning fails
-    return textChunk;
+    throw error;
   }
 }
 
@@ -114,7 +113,7 @@ async function cleanCompleteText(bookTitle) {
       " ❌ Error: Book title is required and must be a non-empty string"
     );
     console.error(" ❌ Please provide a valid book title as a parameter");
-    return;
+    throw new Error("Book title is required and must be a non-empty string");
   }
 
   const sanitizedBookTitle = bookTitle
@@ -127,7 +126,7 @@ async function cleanCompleteText(bookTitle) {
       " ❌ Error: Book title contains no valid alphanumeric characters"
     );
     console.error(` ❌ Original title: "${bookTitle}"`);
-    return;
+    throw new Error("Book title contains no valid alphanumeric characters");
   }
 
   // Input file is in WORKING_DIR/text/complete.txt
@@ -153,7 +152,7 @@ async function cleanCompleteText(bookTitle) {
       console.log(
         ` ❌ complete.txt file not found at ${inputFile}. Run Step 2 first to create the complete.txt file`
       );
-      return;
+      throw new Error(`complete.txt not found at ${inputFile}`);
     }
 
     // Get book title from environment
@@ -165,7 +164,7 @@ async function cleanCompleteText(bookTitle) {
 
     if (completeText.trim().length === 0) {
       console.log(" ❌ complete.txt is empty");
-      return;
+      throw new Error("complete.txt is empty");
     }
 
     // Split text into chunks
@@ -220,6 +219,7 @@ async function cleanCompleteText(bookTitle) {
     console.log(` - Output file: ${outputFile}`);
   } catch (error) {
     console.error(" ❌ Fatal error during text cleaning:", error.message);
+    throw error;
   }
 }
 

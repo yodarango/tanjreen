@@ -21,8 +21,7 @@ async function amalgamateFiles(bookTitle) {
   try {
     // Check if text directory exists
     if (!fs.existsSync(textDir)) {
-      console.error(` ❌ Text directory does not exist: ${textDir}`);
-      return;
+      throw new Error(`Text directory does not exist: ${textDir}`);
     }
 
     // Read all files from text directory
@@ -34,8 +33,7 @@ async function amalgamateFiles(bookTitle) {
     );
 
     if (textFiles.length === 0) {
-      console.log(` ❌ No text files found in ${textDir} directory`);
-      return;
+      throw new Error(`No text files found in ${textDir} directory`);
     }
 
     // Sort files numerically (1.txt, 2.txt, 3.txt, etc.)
@@ -102,19 +100,12 @@ async function amalgamateFiles(bookTitle) {
       } catch (error) {
         console.error(` ❌ Error reading ${textFile}:`, error.message);
 
-        // Add error note to combined content
-        if (combinedContent.length > 0) {
-          combinedContent += "\n\n";
-        }
-        combinedContent += `Error reading file ${textFile}: ${error.message}`;
+        throw new Error(`Error reading ${textFile}: ${error.message}`);
       }
     }
 
     if (combinedContent.length === 0) {
-      console.log(
-        " ❌ No content to combine - all files were empty or had errors"
-      );
-      return;
+      throw new Error("No content to combine - all files were empty");
     }
 
     // Write the combined content to complete.txt
@@ -124,6 +115,7 @@ async function amalgamateFiles(bookTitle) {
     console.log(` - Output file: ${outputFile}`);
   } catch (error) {
     console.error(" ❌ Fatal error during text combination:", error.message);
+    throw error;
   }
 }
 

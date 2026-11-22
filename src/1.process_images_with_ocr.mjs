@@ -63,8 +63,7 @@ async function processImagesWithOCR(bookTitle) {
   try {
     // Ensure the images dir  exist
     if (!fs.existsSync(imagesDir)) {
-      console.error(` ❌ Images directory does not exist: ${imagesDir}`);
-      return;
+      throw new Error(`Images directory does not exist: ${imagesDir}`);
     }
 
     // Now ensure the output dir exists or create it if not
@@ -94,8 +93,7 @@ async function processImagesWithOCR(bookTitle) {
     });
 
     if (processableFiles.length === 0) {
-      console.log(` ❌ No image or PDF files found in ${imagesDir} directory`);
-      return;
+      throw new Error(`No image or PDF files found in ${imagesDir} directory`);
     }
 
     console.log(` - Found ${processableFiles.length} files to process`);
@@ -149,7 +147,7 @@ async function processImagesWithOCR(bookTitle) {
           // Check if file is HEIC/HEIF and convert to JPEG
           if (ext === ".heic" || ext === ".heif") {
             console.log(`   - Converting HEIC file to JPEG: ${file}`);
-            tempJpegPath = path.join(imagesDir, `temp_${i + 1}.jpg`);
+            tempJpegPath = path.join(process.env.WORKING_DIR, `temp_${i + 1}.jpg`);
             processPath = await convertHeicToJpeg(filePath, tempJpegPath);
             console.log(` ✔ HEIC conversion completed`);
           }
@@ -181,13 +179,12 @@ async function processImagesWithOCR(bookTitle) {
       } catch (error) {
         console.error(` ❌ Error processing ${file}:`, error.message);
 
-        // Create an error file to maintain sequence
-        const errorMessage = `  ❌ Error processing file: ${error.message}`;
-        fs.writeFileSync(outputPath, errorMessage, "utf8");
+        throw new Error(`Error processing ${file}: ${error.message}`);
       }
     }
   } catch (error) {
     console.error("❌ Fatal error during OCR processing:", error.message);
+    throw error;
   }
 }
 

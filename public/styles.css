@@ -848,6 +848,10 @@ input.danger:focus {
   transition: all 0.3s ease;
 }
 
+.step.hidden {
+  display: none;
+}
+
 .step.active {
   background: var(--dr-alpha);
   border-left: 4px solid var(--dr-epsilon);
@@ -857,6 +861,20 @@ input.danger:focus {
 .step.completed {
   background: var(--dr-alpha);
   border-left: 4px solid var(--dr-success);
+}
+
+.step.failed {
+  background: var(--dr-alpha);
+  border-left: 4px solid #e74c3c;
+}
+
+.retry-panel.hidden {
+  display: none;
+}
+
+.retry-panel p {
+  color: #e74c3c;
+  overflow-wrap: anywhere;
 }
 
 .step-header {
