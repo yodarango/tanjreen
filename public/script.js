@@ -669,21 +669,10 @@ class AudiobookConverter {
         this.retryStepBtn.disabled = this.retryPending;
       }
 
-      if (data.cancelled) {
-        this.resetStartButton();
-        this.hideTransformationInProgress();
-        this.hideAllSubsteps();
-        window.AppUI.info("Transformation cancelled. Unfinished files are available in your library.");
-      } else if (data.completed) {
-        this.resetStartButton();
-        this.hideTransformationInProgress();
-        this.updateStepStatus(
-          "step-complete",
-          "completed",
-          '<i class="fas fa-check-circle"></i>',
-        );
-        this.hideAllSubsteps();
-        window.AppUI.success("Audiobook transformation completed successfully.");
+      if (data.cancelled || data.completed) {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.reload();
       } else if (data.error && !data.isRunning && !data.paused && !data.savePending && !data.cancelling) {
         this.resetStartButton();
         this.hideTransformationInProgress();
