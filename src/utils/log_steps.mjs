@@ -35,12 +35,12 @@ export async function logThree(step, bookTitle) {
   try {
     console.log(
       "*****************************************************************************\n" +
-        "🧹 Step 3: Cleaning text with OpenAI...\n" +
+        "🧹 Step 3: Preparing text for translation and narration...\n" +
         "*****************************************************************************\n\n"
     );
     await step(bookTitle);
 
-    console.log(` ✅ Step 3: Done cleaning text with OpenAI. \n\n\n`);
+    console.log(` ✅ Step 3: Text preparation completed. \n\n\n`);
   } catch (error) {
     console.error(` ❌ Step 3 failed:`, error);
     throw error;

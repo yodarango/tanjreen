@@ -183,6 +183,7 @@
         <!-- Left Panel: Configuration -->
         <div class="left-panel">
           <div class="config-section">
+            <div id="transformationFormFields">
             <h2><i class="fas fa-book-open"></i> Book Configuration</h2>
 
             <div class="input-group">
@@ -244,6 +245,15 @@
                 <option value="hebrew">Hebrew</option>
                 <option value="thai">Thai</option>
               </select>
+            <div class="input-group sanitize-option">
+              <label for="sanitizeToggle">
+                <input type="checkbox" id="sanitizeToggle" checked />
+                Sanitize
+              </label>
+              <small>Use AI to clean and prepare the text before narration.</small>
+                <span class="sanitize-switch-track" aria-hidden="true"></span>
+              </label>
+              <small>Use AI to clean and prepare the text before narration.</small>
             </div>
 
             <!-- Input Mode Selection -->
@@ -341,6 +351,13 @@
                 <i class="fas fa-rocket"></i> Start Transformation
               </button>
             </div>
+            </div>
+
+            <div id="transformationInProgress" class="transformation-in-progress hidden" role="status" aria-live="polite">
+              <img src="/scribe.webp" alt="Scribe working on your audiobook" />
+              <h2>Transformation in progress</h2>
+              <p>Your file is being processed. We’ll email you when it’s done.</p>
+            </div>
           </div>
 
           <!-- Progress Section -->
@@ -393,7 +410,7 @@
               <div class="step" id="step-clean">
                 <div class="step-header">
                   <span class="step-icon"><i class="fas fa-broom"></i></span>
-                  <span class="step-text">AI Cleaning</span>
+                  <span class="step-text">Text Preparation</span>
                   <span class="step-status"
                     ><i class="fas fa-hourglass-half"></i
                   ></span>
@@ -486,6 +503,7 @@
       <audio id="voiceSamplePlayer" preload="none"></audio>
     </div>
 
+    <script src="ui.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

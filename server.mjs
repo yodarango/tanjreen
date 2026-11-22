@@ -349,7 +349,7 @@ app.post(
 // Once the user click start transformation, this will be ran
 app.post("/api/start-transformation", authenticateToken, async (req, res) => {
   try {
-    const { bookTitle, voice, language } = req.body;
+    const { bookTitle, voice, language, sanitize = true } = req.body;
 
     if (transformationState.isRunning) {
       return res
@@ -398,6 +398,7 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
       bookTitle,
       voice,
       language: language || null,
+      sanitize: sanitize !== false,
     };
 
     fs.writeFileSync(
@@ -421,7 +422,7 @@ app.post(
   authenticateToken,
   async (req, res) => {
     try {
-      const { bookTitle, voice, language, text } = req.body;
+      const { bookTitle, voice, language, text, sanitize = true } = req.body;
 
       if (transformationState.isRunning) {
         return res
@@ -494,6 +495,7 @@ app.post(
         bookTitle,
         voice,
         language: language || null,
+        sanitize: sanitize !== false,
         skipOCR: true, // Flag to indicate we should skip OCR and amalgamation
       };
 
@@ -521,7 +523,7 @@ app.post(
   authenticateToken,
   async (req, res) => {
     try {
-      const { bookTitle, voice, language, url } = req.body;
+      const { bookTitle, voice, language, url, sanitize = true } = req.body;
 
       if (transformationState.isRunning) {
         return res
@@ -595,6 +597,7 @@ app.post(
         bookTitle,
         voice,
         language: language || null,
+        sanitize: sanitize !== false,
         skipOCR: true, // Flag to indicate we should skip OCR and amalgamation
         sourceUrl: scraped.url,
       };
@@ -668,7 +671,7 @@ app.post(
   },
   async (req, res) => {
     try {
-      const { bookTitle, voice, language, text } = req.body;
+      const { bookTitle, voice, language, text, sanitize = true } = req.body;
       const files = req.files || [];
       const hasText = text && text.trim() !== "";
 
@@ -712,6 +715,7 @@ app.post(
         bookTitle,
         voice,
         language: language || null,
+        sanitize: sanitize !== false,
         hasText,
         fileCount: files.length,
       });
@@ -721,6 +725,7 @@ app.post(
         bookTitle,
         voice,
         language: language || null,
+        sanitize: sanitize !== false,
       };
       fs.writeFileSync(
         path.join(workingDir, "temp.json"),

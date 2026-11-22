@@ -3,6 +3,7 @@ import { processTextToSpeech } from "./5.process_tts.mjs";
 import { cleanCompleteText } from "./3.sanitize_text.mjs";
 import { transferFile } from "./7.transfer_file.mjs";
 import { translate } from "./4.translate.mjs";
+import { copySourceText } from "./utils/prepare_text.mjs";
 import fs from "fs";
 import {
   logThree,
@@ -29,6 +30,7 @@ async function startProcessFromText() {
   const bookTitle = tempData.bookTitle || "";
   const voice = tempData.voice || "echo";
   const language = tempData.language || null;
+  const sanitize = tempData.sanitize !== false;
 
   console.log("🚀 Starting transformation from pasted text...");
   console.log(`📖 Book: ${bookTitle}`);
@@ -36,7 +38,7 @@ async function startProcessFromText() {
   console.log(`🌍 Language: ${language || "none"}`);
 
   // Step 3: Clean text with AI
-  await logThree(cleanCompleteText, bookTitle);
+  await logThree(sanitize ? cleanCompleteText : copySourceText, bookTitle);
 
   // Step 4 (optional): Translate text if language is specified
   if (language && language !== null && language !== "") {

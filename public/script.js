@@ -72,6 +72,7 @@ class AudiobookConverter {
         // Update UI with current state
         this.updateProgress(data.progress);
         this.updateSteps(data.currentStep, data.currentStepProcess);
+        this.showTransformationInProgress();
 
         // Start polling
         this.pollProgress();
@@ -101,6 +102,8 @@ class AudiobookConverter {
     this.logoutBtn = document.getElementById("logoutBtn");
     this.viewContentBtn = document.getElementById("viewContentBtn");
     this.cleanPendingBtn = document.getElementById("cleanPendingBtn");
+    this.transformationFormFields = document.getElementById("transformationFormFields");
+    this.transformationInProgress = document.getElementById("transformationInProgress");
 
     // Input mode elements
     this.modeImagesBtn = document.getElementById("modeImages");
@@ -193,9 +196,12 @@ class AudiobookConverter {
 
   async cleanPendingContent() {
     if (
-      !confirm(
-        "⚠️ Are you sure you want to clean all pending content? This will delete all files in the pending directory.",
-      )
+      !(await window.AppUI.confirm({
+        title: "Clear pending files?",
+        message: "This will delete all uploaded files waiting to be processed.",
+        confirmText: "Clear files",
+        danger: true,
+      }))
     ) {
       return;
     }
@@ -216,7 +222,7 @@ class AudiobookConverter {
       this.loadImages();
     } catch (error) {
       console.error("Error cleaning pending content:", error);
-      alert("✗ Error cleaning pending content: " + error.message);
+      window.AppUI.error("Could not clear pending files: " + error.message);
     }
   }
 
@@ -341,7 +347,7 @@ class AudiobookConverter {
     });
 
     if (validFiles.length === 0) {
-      alert("Please select valid image or PDF files");
+      window.AppUI.warning("Select a valid image or PDF file.");
       return;
     }
 
@@ -504,12 +510,12 @@ class AudiobookConverter {
     const language = this.languageSelect.value;
 
     if (!bookTitle) {
-      alert("Please enter a book title");
+      window.AppUI.warning("Please enter a book title.");
       return;
     }
 
     if (!voice || voice === "--- select a voice ---") {
-      alert("Please select a voice");
+      window.AppUI.warning("Please select a voice.");
       return;
     }
 
@@ -517,7 +523,7 @@ class AudiobookConverter {
     if (this.inputMode === "text") {
       const text = this.textInput.value.trim();
       if (!text) {
-        alert("Please paste some text");
+        window.AppUI.warning("Please paste some text.");
         return;
       }
     }
@@ -525,7 +531,7 @@ class AudiobookConverter {
     if (this.inputMode === "url") {
       const url = this.urlInput.value.trim();
       if (!url) {
-        alert("Please enter a URL");
+        window.AppUI.warning("Please enter a URL.");
         return;
       }
     }
@@ -534,6 +540,7 @@ class AudiobookConverter {
     this.startBtn.disabled = true;
     this.startBtn.innerHTML =
       '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    this.showTransformationInProgress();
 
     try {
       // Different endpoints based on input mode
@@ -569,6 +576,7 @@ class AudiobookConverter {
             voice: voice,
             language: language || null,
             url: this.urlInput.value.trim(),
+            sanitize,
           }),
         });
 
@@ -597,6 +605,8 @@ class AudiobookConverter {
             bookTitle: bookTitle,
             voice: voice,
             language: language || null,
+            sanitize,
+            sanitize,
           }),
         });
 
@@ -609,8 +619,9 @@ class AudiobookConverter {
       this.pollProgress();
     } catch (error) {
       console.error("Error starting transformation:", error);
-      alert("Error starting transformation: " + error.message);
+      window.AppUI.error("Could not start transformation: " + error.message);
       this.resetStartButton();
+      this.hideTransformationInProgress();
     }
   }
 
@@ -626,24 +637,27 @@ class AudiobookConverter {
 
       if (data.completed) {
         this.resetStartButton();
+        this.hideTransformationInProgress();
         this.updateStepStatus(
           "step-complete",
           "completed",
           '<i class="fas fa-check-circle"></i>',
         );
         this.hideAllSubsteps();
-        alert("Transformation completed successfully!");
+        window.AppUI.success("Audiobook transformation completed successfully.");
       } else if (data.error) {
         this.resetStartButton();
+        this.hideTransformationInProgress();
         this.hideAllSubsteps();
-        alert("✗ Transformation failed: " + data.error);
+        window.AppUI.error("Transformation failed: " + data.error);
       } else {
         // Continue polling
         setTimeout(() => this.pollProgress(), 1000);
       }
     } catch (error) {
       console.error("Error checking progress:", error);
-      this.resetStartButton();
+      // Keep the in-progress view during temporary polling/network failures.
+      setTimeout(() => this.pollProgress(), 2000);
     }
   }
 
@@ -771,6 +785,16 @@ class AudiobookConverter {
     this.startBtn.disabled = false;
     this.startBtn.innerHTML =
       '<i class="fas fa-rocket"></i> Start Transformation';
+  }
+
+  showTransformationInProgress() {
+    this.transformationFormFields.classList.add("hidden");
+    this.transformationInProgress.classList.remove("hidden");
+  }
+
+  hideTransformationInProgress() {
+    this.transformationInProgress.classList.add("hidden");
+    this.transformationFormFields.classList.remove("hidden");
   }
 }
 
