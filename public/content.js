@@ -141,7 +141,11 @@ class ContentLibrary {
     iconContainer.appendChild(iconElement);
 
     // Set title
-    card.querySelector("[data-title]").textContent = item.name;
+    card.querySelector("[data-title]").textContent = (item.title || item.name).replace(/_/g, " ");
+    if (item.unfinished) {
+      card.classList.add("unfinished");
+      card.querySelector("[data-unfinished]").classList.remove("hidden");
+    }
 
     // Set metadata
     card.querySelector("[data-size]").textContent = this.formatFileSize(
@@ -178,8 +182,8 @@ class ContentLibrary {
 
     // Sync to Audiobookshelf is only available for folders with files / MP3s
     const isSyncable =
-      item.name.toLowerCase().endsWith(".mp3") ||
-      (item.type === "folder" && item.fileCount > 0);
+      !item.unfinished && (item.name.toLowerCase().endsWith(".mp3") ||
+      (item.type === "folder" && item.fileCount > 0));
     if (isSyncable) {
       syncBtn.addEventListener("click", () =>
         this.syncToAudiobookshelf(item.name, syncBtn)
@@ -284,7 +288,7 @@ class ContentLibrary {
       }, 500);
     } catch (error) {
       console.error("Error downloading item:", error);
-      alert("Error downloading: " + error.message);
+      window.AppUI.error("Error downloading: " + error.message);
       // Restore button state on error
       buttonElement.disabled = false;
       buttonElement.innerHTML = originalContent;
@@ -317,12 +321,12 @@ class ContentLibrary {
         throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
 
-      alert(
-        `✓ ${data.message}\n\nThe book will appear in Audiobookshelf within a few seconds. A description and cover art will be generated and added automatically in the next couple of minutes.`
+      window.AppUI.success(
+        `${data.message} The book will appear in Audiobookshelf shortly; description and cover art will follow.`
       );
     } catch (error) {
       console.error("Error syncing to Audiobookshelf:", error);
-      alert("✗ Sync failed: " + error.message);
+      window.AppUI.error("Sync failed: " + error.message);
     } finally {
       // Restore button state
       buttonElement.disabled = false;
@@ -332,9 +336,12 @@ class ContentLibrary {
 
   async deleteItem(filename, cardElement) {
     if (
-      !confirm(
-        `Are you sure you want to delete "${filename}"? This action cannot be undone.`
-      )
+      !(await window.AppUI.confirm({
+        title: "Delete this item?",
+        message: `Are you sure you want to delete "${filename}"? This action cannot be undone.`,
+        confirmText: "Delete item",
+        danger: true,
+      }))
     ) {
       return;
     }
@@ -368,9 +375,10 @@ class ContentLibrary {
       }, 300);
 
       console.log(`${data.message}`);
+      window.AppUI.success(data.message);
     } catch (error) {
       console.error("Error deleting item:", error);
-      alert("Error deleting: " + error.message);
+      window.AppUI.error("Error deleting: " + error.message);
     }
   }
 }

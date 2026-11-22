@@ -356,6 +356,10 @@
               <img src="/scribe.webp" alt="Scribe working on your audiobook" />
               <h2 id="transformationStatusTitle">Transformation in progress</h2>
               <p id="transformationStatusText">Your file is being processed. We’ll email you when it’s done.</p>
+              <div class="processing-actions">
+                <span id="processingIndicator"><i class="fas fa-spinner fa-spin"></i> Processing...</span>
+                <button id="cancelTransformation" class="btn danger" type="button"><i class="fas fa-stop"></i> Cancel transformation</button>
+              </div>
               <div id="retryPanel" class="retry-panel hidden">
                 <p id="retryError"></p>
                 <button id="retryStep" class="btn primary" type="button"><i class="fas fa-redo"></i> Retry failed step</button>

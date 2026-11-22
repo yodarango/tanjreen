@@ -262,6 +262,14 @@ header p {
   line-height: 1.6;
 }
 
+.processing-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
 .config-section h3,
 .progress-section h3,
 .images-section h3 {

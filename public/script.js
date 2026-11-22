@@ -6,6 +6,8 @@ class AudiobookConverter {
     this.authToken = localStorage.getItem("authToken");
     this.inputMode = "images"; // 'images', 'text', or 'url'
     this.retryPending = false;
+    this.cancelPending = false;
+    this.jobId = null;
 
     // Check authentication before initializing
     this.checkAuth().then((isAuthenticated) => {
@@ -62,7 +64,7 @@ class AudiobookConverter {
       // If a process is running or not yet completed, resume polling
       if (
         data.isRunning ||
-        (data.progress > 0 && !data.completed && !data.error)
+        (data.progress > 0 && !data.completed && !data.cancelled && !data.error)
       ) {
         console.log("🔄 Process in progress detected, resuming polling...");
         this.isProcessing = true;
@@ -99,6 +101,8 @@ class AudiobookConverter {
     this.transformationStatusText = document.getElementById("transformationStatusText");
     this.retryError = document.getElementById("retryError");
     this.retryStepBtn = document.getElementById("retryStep");
+    this.cancelBtn = document.getElementById("cancelTransformation");
+    this.processingIndicator = document.getElementById("processingIndicator");
     this.playVoiceSampleBtn = document.getElementById("playVoiceSample");
     this.imagesList = document.getElementById("imagesList");
     this.imagesCount = document.getElementById("imagesCount");
@@ -134,6 +138,7 @@ class AudiobookConverter {
   setupEventListeners() {
     this.startBtn.addEventListener("click", () => this.startTransformation());
     this.retryStepBtn.addEventListener("click", () => this.retryFailedStep());
+    this.cancelBtn.addEventListener("click", () => this.cancelTransformation());
     this.playVoiceSampleBtn.addEventListener("click", () =>
       this.playVoiceSample(),
     );
@@ -550,6 +555,7 @@ class AudiobookConverter {
     this.startBtn.innerHTML =
       '<i class="fas fa-spinner fa-spin"></i> Processing...';
     this.showTransformationInProgress();
+    this.cancelBtn.disabled = true;
 
     try {
       // Different endpoints based on input mode
@@ -640,13 +646,22 @@ class AudiobookConverter {
         headers: this.getAuthHeaders(),
       });
       const data = await response.json();
+      this.jobId = data.jobId || null;
 
       document.getElementById("step-translate").classList.toggle("hidden", !data.language);
       this.updateProgress(data.progress);
       this.updateSteps(data.currentStep, data.currentStepProcess, data.paused);
-      this.retryPanel.classList.toggle("hidden", !data.paused);
-      this.transformationStatusTitle.textContent = data.paused ? "Transformation paused" : "Transformation in progress";
-      this.transformationStatusText.textContent = data.paused
+      this.retryPanel.classList.toggle("hidden", !data.paused || data.cancelling || data.savePending);
+      this.cancelBtn.disabled = this.cancelPending || data.cancelling || !this.jobId;
+      this.processingIndicator.innerHTML = data.cancelling
+        ? '<i class="fas fa-spinner fa-spin"></i> Saving unfinished work...'
+        : data.savePending ? '<i class="fas fa-exclamation-triangle"></i> Save needed'
+        : data.paused ? '<i class="fas fa-pause"></i> Paused' : '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      this.transformationStatusTitle.textContent = data.cancelling ? "Cancelling transformation" : data.savePending ? "Unfinished work needs saving" : data.paused ? "Transformation paused" : "Transformation in progress";
+      this.transformationStatusText.textContent = data.cancelling
+        ? "Stopping the process and saving the files available so far."
+        : data.savePending ? (data.error || "Could not save unfinished work. Try cancellation again.")
+        : data.paused
         ? "Processing will continue after you retry the failed step."
         : "Your file is being processed. We’ll email you when it’s done.";
       if (data.paused) {
@@ -654,7 +669,12 @@ class AudiobookConverter {
         this.retryStepBtn.disabled = this.retryPending;
       }
 
-      if (data.completed) {
+      if (data.cancelled) {
+        this.resetStartButton();
+        this.hideTransformationInProgress();
+        this.hideAllSubsteps();
+        window.AppUI.info("Transformation cancelled. Unfinished files are available in your library.");
+      } else if (data.completed) {
         this.resetStartButton();
         this.hideTransformationInProgress();
         this.updateStepStatus(
@@ -664,7 +684,7 @@ class AudiobookConverter {
         );
         this.hideAllSubsteps();
         window.AppUI.success("Audiobook transformation completed successfully.");
-      } else if (data.error && !data.paused) {
+      } else if (data.error && !data.isRunning && !data.paused && !data.savePending && !data.cancelling) {
         this.resetStartButton();
         this.hideTransformationInProgress();
         this.hideAllSubsteps();
@@ -677,6 +697,36 @@ class AudiobookConverter {
       console.error("Error checking progress:", error);
       // Keep the in-progress view during temporary polling/network failures.
       setTimeout(() => this.pollProgress(), 2000);
+    }
+  }
+
+  async cancelTransformation() {
+    if (this.cancelPending) return;
+    const jobId = this.jobId;
+    if (!jobId) return;
+    this.cancelPending = true;
+    this.cancelBtn.disabled = true;
+    try {
+      const confirmed = await window.AppUI.confirm({
+        title: "Cancel this transformation?",
+        message: "Processing will stop. Available files will be saved to your library as an unfinished item.",
+        confirmText: "Cancel transformation",
+        cancelText: "Keep processing",
+        danger: true,
+      });
+      if (!confirmed) return;
+      const response = await fetch("/api/cancel-transformation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...this.getAuthHeaders() },
+        body: JSON.stringify({ jobId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Cancellation failed");
+    } catch (error) {
+      window.AppUI.error("Could not cancel transformation: " + error.message);
+    } finally {
+      this.cancelPending = false;
+      this.cancelBtn.disabled = !this.isProcessing || !this.jobId;
     }
   }
 

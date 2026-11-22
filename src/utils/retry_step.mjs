@@ -1,6 +1,15 @@
 // Interactive web jobs use IPC to wait for an explicit retry. CLI and the
 // streaming API have no IPC channel and continue to fail immediately.
-const exitOnDisconnect = () => process.exit(1);
+const exitOnDisconnect = () => {
+  // Detached interactive workers must not leave OCR or ffmpeg running if the
+  // server disappears unexpectedly.
+  if (process.env.INTERACTIVE_WORKER === "1") {
+    try { process.kill(-process.pid, "SIGTERM"); } catch (error) {
+      if (error.code !== "ESRCH") console.error("Could not stop worker group:", error);
+    }
+  }
+  process.exit(1);
+};
 if (process.connected) process.once("disconnect", exitOnDisconnect);
 
 export function disconnectWorker() {
@@ -14,7 +23,9 @@ export async function runStep(number, step) {
   while (true) {
     if (process.connected) process.send({ type: "STEP_START", step: number });
     try {
-      return await step();
+      const result = await step();
+      if (process.connected) process.send({ type: "STEP_COMPLETE", step: number });
+      return result;
     } catch (error) {
       if (!process.connected) throw error;
       await new Promise((resolve, reject) => {

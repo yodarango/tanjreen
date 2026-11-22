@@ -226,8 +226,16 @@ function attachInteractiveWorker(child, language, fromText) {
   transformationState.language = language || null;
   transformationState.fromText = fromText;
   transformationState.paused = false;
+  transformationState.completedSteps = [];
   child.on("message", (message) => {
     if (interactiveChild !== child) return;
+    if (message.type === "STEP_COMPLETE") {
+      if (!transformationState.completedSteps.includes(message.step)) {
+        transformationState.completedSteps.push(message.step);
+      }
+      return;
+    }
+    if (transformationState.cancelling) return;
     if (message.type === "STEP_START") {
       const steps = [1, 2, 3, ...(language ? [4] : []), 5, 6, 7].filter(
         (step) => !fromText || step >= 3,
@@ -254,7 +262,7 @@ function attachInteractiveWorker(child, language, fromText) {
 
 app.post("/api/retry-step", authenticateToken, (req, res) => {
   const child = interactiveChild;
-  if (!transformationState.isRunning || !transformationState.paused || !child?.connected) {
+  if (!transformationState.isRunning || transformationState.cancelling || !transformationState.paused || !child?.connected) {
     return res.status(409).json({ error: "No paused step is available to retry" });
   }
   const step = transformationState.failedStep;
@@ -272,6 +280,127 @@ app.post("/api/retry-step", authenticateToken, (req, res) => {
     }
     res.json({ success: true, step });
   });
+});
+
+// Save a separate snapshot: never mix this run with older output for the same title.
+function saveUnfinishedTransformation(state) {
+  const doneDir = process.env.DONE_DIR;
+  const workingDir = process.env.WORKING_DIR;
+  const title = sanitizeBookTitle(state.bookTitle) || "Untitled";
+  fs.mkdirSync(doneDir, { recursive: true });
+  const name = `${title}_unfinished_${crypto.randomUUID()}`;
+  const destination = path.join(doneDir, name);
+  fs.mkdirSync(destination);
+  try {
+    for (const dir of ["text", "audio"]) {
+      const source = path.join(workingDir, dir);
+      if (fs.existsSync(source)) {
+        fs.cpSync(source, path.join(destination, dir), {
+          recursive: true,
+          filter: (entry) => !entry.endsWith(".tmp"),
+        });
+      }
+    }
+    if (!state.fromText && fs.existsSync(process.env.PENDING_DIR)) {
+      fs.cpSync(process.env.PENDING_DIR, path.join(destination, "source-files"), { recursive: true });
+    }
+    // The output directory belongs only to this run; it can safely include
+    // partially written artifacts, all of which are labelled unfinished.
+    if (fs.existsSync(state.runDoneDir)) {
+      fs.cpSync(state.runDoneDir, path.join(destination, "output"), { recursive: true });
+    }
+    fs.writeFileSync(path.join(destination, ".tanjreen.json"), JSON.stringify({
+      status: "unfinished", title: state.bookTitle, cancelledAt: new Date().toISOString(),
+      completedSteps: state.completedSteps, language: state.language,
+    }, null, 2));
+    fs.writeFileSync(path.join(destination, "README.txt"),
+      "This transformation was cancelled and is unfinished. Available text, audio chunks, source files, and output artifacts are included. Files may be incomplete and are not a finished audiobook.\n");
+    return name;
+  } catch (error) {
+    fs.rmSync(destination, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+function prepareInteractiveOutput() {
+  const runDoneDir = path.join(process.env.WORKING_DIR, "completed-output");
+  fs.mkdirSync(runDoneDir, { recursive: true });
+  transformationState.runDoneDir = runDoneDir;
+  return runDoneDir;
+}
+
+function publishInteractiveOutput(state) {
+  fs.mkdirSync(process.env.DONE_DIR, { recursive: true });
+  fs.cpSync(state.runDoneDir, process.env.DONE_DIR, { recursive: true, force: true });
+}
+
+app.post("/api/cancel-transformation", authenticateToken, async (req, res) => {
+  const state = transformationState;
+  const child = interactiveChild;
+  if (!state.isRunning || state.cancelling || (!child && !state.savePending)) {
+    return res.status(409).json({ error: "No transformation is available to cancel" });
+  }
+  if (!req.body?.jobId || req.body.jobId !== state.jobId) {
+    return res.status(409).json({ error: "The transformation has changed; refresh its status before cancelling" });
+  }
+  const wasPaused = state.paused;
+  state.cancelling = true;
+  state.paused = false;
+  try {
+    if (child) {
+      const closed = new Promise((resolve) => child.once("close", (code, signal) => resolve({ code, signal })));
+      // Interactive workers are process-group leaders, so OCR and ffmpeg stop too.
+      try {
+        process.kill(-child.pid, "SIGTERM");
+      } catch (error) {
+        if (error.code !== "ESRCH") throw error;
+      }
+      const timer = setTimeout(() => {
+        try { process.kill(-child.pid, "SIGKILL"); } catch (error) {
+          if (error.code !== "ESRCH") console.error("Failed to stop worker group:", error);
+        }
+      }, 2000);
+      const result = await closed;
+      clearTimeout(timer);
+      try { process.kill(-child.pid, "SIGKILL"); } catch (error) {
+        if (error.code !== "ESRCH") throw error;
+      }
+      if (result.code === 0) {
+        try {
+          publishInteractiveOutput(state);
+        } catch (error) {
+          state.savePending = true;
+          throw error;
+        }
+        state.cancelling = false;
+        state.isRunning = false;
+        state.completed = true;
+        state.progress = 100;
+        state.currentStep = 7;
+        sendCompletionEmail(state.bookTitle, state.outputPath, true, null);
+        return res.status(409).json({ error: "Transformation completed before it could be cancelled" });
+      }
+    }
+    state.savePending = true;
+    const itemName = saveUnfinishedTransformation(state);
+    state.isRunning = false;
+    state.cancelling = false;
+    state.savePending = false;
+    state.cancelled = true;
+    state.error = null;
+    state.unfinishedItem = itemName;
+    try { fs.rmSync(state.runDoneDir, { recursive: true, force: true }); }
+    catch (error) { console.error("Could not clean temporary output:", error); }
+    res.json({ success: true, itemName });
+  } catch (error) {
+    console.error("Cancellation failed:", error);
+    state.cancelling = false;
+    // Do not allow a new run to erase working files if saving failed.
+    state.savePending = !interactiveChild;
+    state.paused = Boolean(interactiveChild && wasPaused);
+    state.error = `Could not save unfinished work: ${error.message}`;
+    res.status(500).json({ error: state.error });
+  }
 });
 
 // API Routes
@@ -441,6 +570,7 @@ app.post("/api/start-transformation", authenticateToken, async (req, res) => {
     transformationState = {
       completed: false,
       isRunning: true,
+      jobId: crypto.randomUUID(),
       bookTitle: bookTitle,
       outputPath: null,
       messages: [],
@@ -525,6 +655,7 @@ app.post(
       transformationState = {
         completed: false,
         isRunning: true,
+        jobId: crypto.randomUUID(),
         bookTitle: bookTitle,
         outputPath: null,
         messages: [],
@@ -540,19 +671,7 @@ app.post(
 
       // Clean the working directory BEFORE starting the process
       const workingDir = process.env.WORKING_DIR;
-      const doneDir = process.env.DONE_DIR;
       await cleanWorkingDirectory(workingDir);
-
-      // Sanitize book title for file/folder names
-      let sanitizedBookTitle = bookTitle
-        .replace(/[^a-zA-Z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-
-      // Create the done directory structure
-      const bookDir = path.join(doneDir, sanitizedBookTitle);
-      if (!fs.existsSync(bookDir)) {
-        fs.mkdirSync(bookDir, { recursive: true });
-      }
 
       // Save the text to working directory as complete.txt (for step 3 to process)
       const workingTextPath = path.join(workingDir, "text", "complete.txt");
@@ -649,6 +768,7 @@ app.post(
       transformationState = {
         completed: false,
         isRunning: true,
+        jobId: crypto.randomUUID(),
         bookTitle: bookTitle,
         outputPath: null,
         messages: [],
@@ -1094,8 +1214,17 @@ app.get("/api/content", authenticateToken, (req, res) => {
 
           calculateDirSize(itemPath);
 
+          let metadata = null;
+          try {
+            metadata = JSON.parse(fs.readFileSync(path.join(itemPath, ".tanjreen.json"), "utf8"));
+          } catch (error) {
+            if (error.code !== "ENOENT") console.error(`Invalid item metadata for ${item}:`, error.message);
+          }
+
           return {
             name: item,
+            title: metadata?.status === "unfinished" ? metadata.title : item,
+            unfinished: metadata?.status === "unfinished",
             type: "folder",
             size: totalSize,
             fileCount: fileCount,
@@ -1257,6 +1386,14 @@ app.post("/api/content/sync-abs/:filename", authenticateToken, async (req, res) 
       return res.status(404).json({ error: "Item not found" });
     }
 
+    const metadataPath = path.join(itemPath, ".tanjreen.json");
+    if (fs.existsSync(metadataPath)) {
+      const metadata = JSON.parse(fs.readFileSync(metadataPath, "utf8"));
+      if (metadata.status === "unfinished") {
+        return res.status(400).json({ error: "Unfinished transformations cannot be synced" });
+      }
+    }
+
     // Resolve the source MP3: folder/<name>.mp3, first mp3 inside the folder, or a bare .mp3 file
     let sourceFile;
     const stats = fs.statSync(itemPath);
@@ -1329,6 +1466,8 @@ function startTransformationProcess(language) {
   // pass the book title and voice as a func param
   const child = spawn("node", ["./src/process.web.mjs"], {
     stdio: ["pipe", "pipe", "pipe", "ipc"],
+    detached: true,
+    env: { ...process.env, DONE_DIR: prepareInteractiveOutput(), INTERACTIVE_WORKER: "1" },
     cwd: process.cwd(),
   });
   attachInteractiveWorker(child, language, false);
@@ -1397,15 +1536,25 @@ function startTransformationProcess(language) {
   // another potential for failure
   child.on("error", (error) => {
     console.error("❌ Spawn error:", error);
+    if (transformationState.cancelling) return;
     transformationState.isRunning = false;
     transformationState.error = `Spawn error: ${error.message}`;
   });
 
   // on closing alert too.
   child.on("close", async (code) => {
+    if (transformationState.cancelling) return;
     transformationState.isRunning = false;
 
     if (code === 0) {
+      try {
+        publishInteractiveOutput(transformationState);
+      } catch (error) {
+        transformationState.isRunning = true;
+        transformationState.savePending = true;
+        transformationState.error = `Could not publish output: ${error.message}`;
+        return;
+      }
       transformationState.completed = true;
       transformationState.progress = 100;
       transformationState.currentStep = 7;
@@ -1449,6 +1598,8 @@ function startTransformationProcessFromText(language) {
   // Use a different process file that skips steps 1 and 2
   const child = spawn("node", ["./src/process.text.mjs"], {
     stdio: ["pipe", "pipe", "pipe", "ipc"],
+    detached: true,
+    env: { ...process.env, DONE_DIR: prepareInteractiveOutput(), INTERACTIVE_WORKER: "1" },
     cwd: process.cwd(),
   });
   attachInteractiveWorker(child, language, true);
@@ -1517,15 +1668,25 @@ function startTransformationProcessFromText(language) {
   // another potential for failure
   child.on("error", (error) => {
     console.error("❌ Spawn error:", error);
+    if (transformationState.cancelling) return;
     transformationState.isRunning = false;
     transformationState.error = `Spawn error: ${error.message}`;
   });
 
   // on closing alert too.
   child.on("close", async (code) => {
+    if (transformationState.cancelling) return;
     transformationState.isRunning = false;
 
     if (code === 0) {
+      try {
+        publishInteractiveOutput(transformationState);
+      } catch (error) {
+        transformationState.isRunning = true;
+        transformationState.savePending = true;
+        transformationState.error = `Could not publish output: ${error.message}`;
+        return;
+      }
       transformationState.completed = true;
       transformationState.progress = 100;
       transformationState.currentStep = 7;

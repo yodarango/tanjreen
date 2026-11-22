@@ -2,7 +2,7 @@
   const styles = `
     .app-toast-region{position:fixed;z-index:10001;top:18px;right:18px;display:flex;flex-direction:column;gap:10px;width:min(92vw,380px)}
     .app-toast{padding:14px 16px;border-radius:10px;border:1px solid currentColor;background:#242424;color:#ff8c42;box-shadow:0 12px 36px #0008;animation:app-toast-in .18s ease-out}
-    .app-toast.success{color:#06ffa5}.app-toast.error{color:#ff006e}.app-toast.warning{color:#ffbe0b}.app-toast.info{color:#ff8c42}
+    .app-toast.success{color:#06ffa5}.app-toast.error{color:#ff5555}.app-toast.warning{color:#ffbe0b}.app-toast.info{color:#ff8c42}
     .app-toast-message{color:#fff;line-height:1.45}.app-toast-close{float:right;border:0;background:none;color:inherit;font-size:1.15rem;cursor:pointer}
     .app-modal-backdrop{position:fixed;z-index:10000;inset:0;display:grid;place-items:center;padding:20px;background:#000b;backdrop-filter:blur(4px)}
     .app-modal{width:min(100%,480px);padding:24px;border:1px solid #555;border-radius:16px;background:#2a2a2a;color:#fff;box-shadow:0 24px 70px #0009}
@@ -42,6 +42,7 @@
   function confirm({ title = "Please confirm", message, confirmText = "Confirm", cancelText = "Cancel", danger = false }) {
     return new Promise((resolve) => {
       const backdrop = document.createElement("div");
+      const previousFocus = document.activeElement;
       backdrop.className = "app-modal-backdrop";
       const dialog = document.createElement("section");
       dialog.className = "app-modal";
@@ -67,12 +68,18 @@
       dialog.append(heading, body, actions);
       backdrop.appendChild(dialog);
       document.body.appendChild(backdrop);
-      const done = (value) => { backdrop.remove(); resolve(value); };
+      const done = (value) => { backdrop.remove(); previousFocus?.focus(); resolve(value); };
       cancel.addEventListener("click", () => done(false));
       accept.addEventListener("click", () => done(true));
       backdrop.addEventListener("click", (event) => { if (event.target === backdrop) done(false); });
-      dialog.addEventListener("keydown", (event) => { if (event.key === "Escape") done(false); });
-      accept.focus();
+      dialog.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") done(false);
+        if (event.key === "Tab") {
+          if (event.shiftKey && document.activeElement === cancel) { event.preventDefault(); accept.focus(); }
+          else if (!event.shiftKey && document.activeElement === accept) { event.preventDefault(); cancel.focus(); }
+        }
+      });
+      cancel.focus();
     });
   }
 

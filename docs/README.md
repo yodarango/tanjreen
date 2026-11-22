@@ -172,6 +172,7 @@ GET  /api/languages           - List available translation languages
 GET  /api/completed           - List completed audiobooks
 GET  /api/progress            - Get transformation progress
 POST /api/retry-step          - Retry the paused step of the interactive transformation
+POST /api/cancel-transformation - Cancel the current interactive job using its progress jobId
 POST /api/clear-pending       - Clear pending directory
 POST /api/upload-images       - Upload images (multipart/form-data)
 POST /api/start-transformation - Start the transformation process
@@ -185,7 +186,11 @@ reused. Retrying other steps may repeat their work and API calls. Paused jobs
 are held in the worker's memory and cannot be resumed after a server restart.
 Only one interactive transformation can be active or paused at a time. The
 programmatic streaming API reports errors and ends the request instead of
-waiting for an interactive retry. Cancellation is not yet implemented.
+waiting for an interactive retry. To cancel an interactive transformation,
+confirm **Cancel transformation** on the progress screen. Available files are
+saved as a separate **Unfinished** item in the library, downloadable as a ZIP;
+audio chunks or output artifacts may be incomplete. Unfinished items cannot be
+synced to Audiobookshelf. Cancellation does not resume a job after a restart.
 
 ---
 
