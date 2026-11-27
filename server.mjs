@@ -4,6 +4,7 @@ import { triggerAudiobookshelfScan } from "./src/utils/audiobookshelf.mjs";
 import { enrichAndUpdateAudiobookshelf } from "./src/utils/enrich.mjs";
 import { authenticateToken } from "./src/middleware/auth.mjs";
 import { authenticateApiKey } from "./src/middleware/apiKey.mjs";
+import { registerCleanupApi } from "./src/cleanup_api.mjs";
 import { sendCompletionEmail } from "./src/utils/email.mjs";
 import { spawn } from "child_process";
 import crypto from "crypto";
@@ -186,6 +187,7 @@ function sendSseEvent(res, event, data) {
 }
 
 // Middleware
+registerCleanupApi(app, express.json({ limit: "8mb" }));
 app.use(express.json());
 
 // HTML page routes (without .html extension)

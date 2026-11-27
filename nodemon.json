@@ -1,5 +1,5 @@
 {
-  "watch": ["server.mjs", "src/**/*.mjs"],
+  "watch": [".env", "server.mjs", "src/**/*.mjs"],
   "ignore": [
     "src/content/**",
     "src/content/2.working/**",
@@ -9,5 +9,5 @@
     "**/*.json",
     "public/**"
   ],
-  "ext": "js,mjs"
+  "ext": "js,mjs,env"
 }
