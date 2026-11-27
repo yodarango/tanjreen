@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { cleanDocumentSection } from "./3.sanitize_text.mjs";
+import { cleanDocument, documentChunkCount } from "./3.sanitize_text.mjs";
 import { authenticateApiKey } from "./middleware/apiKey.mjs";
 
 // Durable cleanup-only queue; completely separate from audiobook working files.
@@ -10,6 +10,28 @@ export function registerCleanupApi(app, jsonParser) {
   const save = async (file, job) => {
     await fs.writeFile(`${file}.tmp`, JSON.stringify(job), { mode: 0o600 });
     await fs.rename(`${file}.tmp`, file);
+  };
+  const sendCallback = async (job, payload) => {
+    const response = await fetch(job.callbackUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${job.callbackToken}` },
+      body: JSON.stringify({ jobId: job.jobId, ...payload }),
+      redirect: "error",
+      signal: AbortSignal.timeout(10000),
+    });
+    await response.body?.cancel();
+    if (!response.ok) throw new Error(`Callback HTTP ${response.status}`);
+  };
+  const reportProgress = async (job, phase, completedChunks, totalChunks, startedAt) => {
+    const elapsed = startedAt ? (Date.now() - startedAt) / 1000 : 0;
+    const remainingSeconds = completedChunks > 0 && completedChunks < totalChunks
+      ? Math.max(1, Math.ceil(elapsed / completedChunks * (totalChunks - completedChunks))) : null;
+    try {
+      await sendCallback(job, { progress: { phase, completedChunks, totalChunks, remainingSeconds } });
+    } catch (error) {
+      // A transient progress failure must not discard cleaned work or fail the job.
+      console.error(`Cleanup ${job.jobId} progress update failed:`, error.message);
+    }
   };
   const tick = async () => {
     if (busy) return;
@@ -24,26 +46,32 @@ export function registerCleanupApi(app, jsonParser) {
           if (job.nextAttempt > Date.now()) continue;
           if (!job.result) {
             try {
-              const sections = [];
-              for (const section of job.sections) sections.push(await cleanDocumentSection(section, job.bookTitle));
-              job.result = { jobId: job.jobId, sections };
+              // Flatten old queued requests as well; chapter boundaries have no cleanup meaning.
+              const content = typeof job.content === "string" ? job.content : (job.sections || []).join("\n\n");
+              const totalChunks = documentChunkCount(content);
+              const startedAt = Date.now();
+              let completedChunks = 0;
+              await reportProgress(job, "cleaning", 0, totalChunks, startedAt);
+              const cleaned = await cleanDocument(content, job.bookTitle, async () => {
+                completedChunks++;
+                await reportProgress(job, "cleaning", completedChunks, totalChunks, startedAt);
+              });
+              job.result = { jobId: job.jobId, content: cleaned };
             } catch (error) {
               console.error(`Cleanup ${job.jobId} failed:`, error.message);
               job.result = { jobId: job.jobId, error: "Text sanitization failed" };
             }
             delete job.sections;
+            delete job.content;
+            await save(file, job);
+          }
+          if (Array.isArray(job.result.sections)) {
+            job.result.content = job.result.sections.join("\n\n");
+            delete job.result.sections;
             await save(file, job);
           }
           try {
-            const response = await fetch(job.callbackUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${job.callbackToken}` },
-              body: JSON.stringify(job.result),
-              redirect: "error",
-              signal: AbortSignal.timeout(30000),
-            });
-            await response.body?.cancel();
-            if (!response.ok) throw new Error(`Callback HTTP ${response.status}`);
+            await sendCallback(job, job.result);
             await fs.unlink(file);
           } catch (error) {
             job.attempts = (job.attempts || 0) + 1;
@@ -65,7 +93,7 @@ export function registerCleanupApi(app, jsonParser) {
   };
 
   app.post("/api/cleanup", authenticateApiKey, jsonParser, async (req, res) => {
-    const { jobId, bookTitle, sections, callbackUrl, callbackToken } = req.body || {};
+    const { jobId, bookTitle, content, callbackUrl, callbackToken } = req.body || {};
     const base = (process.env.ZAPOHTEH_BASE_URL || "").replace(/\/+$/, "");
     if (!base) return res.status(503).json({ error: "ZAPOHTEH_BASE_URL is not configured" });
     let allowed;
@@ -76,15 +104,14 @@ export function registerCleanupApi(app, jsonParser) {
     if (typeof jobId !== "string" || !/^[a-f0-9]{32}$/.test(jobId) ||
         typeof callbackToken !== "string" || !/^[a-f0-9]{64}$/.test(callbackToken) ||
         typeof bookTitle !== "string" || !bookTitle.trim() || bookTitle.length > 2000 ||
-        !Array.isArray(sections) || !sections.length || sections.length > 2000 ||
-        sections.some((section) => typeof section !== "string" || !section.trim())) {
+        typeof content !== "string" || !content.trim()) {
       return res.status(400).json({ error: "Invalid cleanup request" });
     }
     try {
       await fs.mkdir(directory, { recursive: true, mode: 0o700 });
       const file = path.join(directory, `${jobId}.json`);
       try {
-        await fs.writeFile(file, JSON.stringify({ jobId, bookTitle, sections, callbackUrl, callbackToken, createdAt: Date.now() }), { flag: "wx", mode: 0o600 });
+        await fs.writeFile(file, JSON.stringify({ jobId, bookTitle, content, callbackUrl, callbackToken, createdAt: Date.now() }), { flag: "wx", mode: 0o600 });
       } catch (error) {
         if (error.code !== "EEXIST") throw error;
       }

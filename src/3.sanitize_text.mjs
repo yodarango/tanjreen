@@ -226,37 +226,36 @@ async function cleanCompleteText(bookTitle) {
 // Export the function for use in other modules
 export { cleanCompleteText };
 
-// Keep headings byte-for-byte intact and bound even text without sentence endings.
-// This entry point has no filesystem, translation, or speech side effects.
-export async function cleanDocumentSection(text, bookTitle) {
-  const parts = text.split(/(^#{1,6}[\t ]+.*$)/m);
-  const result = [];
-  for (const part of parts) {
-    if (!part.trim() || /^#{1,6}[\t ]+[^\n]*$/.test(part)) {
-      result.push(part);
-      continue;
-    }
-    const chunks = [];
-    let remaining = part;
-    while (remaining.length > 6000) {
-      let end = remaining.lastIndexOf("\n", 6000);
-      if (end < 3000) end = remaining.lastIndexOf(" ", 6000);
-      if (end < 3000) end = 6000;
-      chunks.push(remaining.slice(0, end));
-      remaining = remaining.slice(end);
-    }
-    if (remaining.trim()) chunks.push(remaining);
-    const cleaned = [];
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = await cleanTextChunk(chunks[i], bookTitle, i, chunks.length, true);
-      if (chunk) cleaned.push(chunk);
-    }
-    result.push(`\n\n${cleaned.join("\n\n")}\n\n`);
+// Only size-based AI chunks: headings are ordinary content, never chapter boundaries.
+function documentChunks(text) {
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > 6000) {
+    let end = remaining.lastIndexOf("\n", 6000);
+    if (end < 3000) end = remaining.lastIndexOf(" ", 6000);
+    if (end < 3000) end = 6000;
+    chunks.push(remaining.slice(0, end));
+    remaining = remaining.slice(end);
   }
-  const cleaned = result.join("").trim();
-  const headings = (value) => value.split("\n").filter((line) => /^#{1,6}[\t ]+/.test(line)).join("\n");
-  if (!cleaned || headings(text) !== headings(cleaned)) {
-    throw new Error("Cleanup returned empty content or changed Markdown headings");
+  if (remaining.trim()) chunks.push(remaining);
+  return chunks;
+}
+
+export function documentChunkCount(text) {
+  return documentChunks(text).length;
+}
+
+export async function cleanDocument(text, bookTitle, onChunkComplete = async () => {}) {
+  const chunks = documentChunks(text);
+  const cleaned = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = await cleanTextChunk(chunks[i], bookTitle, i, chunks.length, true);
+    if (chunk) cleaned.push(chunk);
+    await onChunkComplete();
   }
-  return cleaned;
+  const content = cleaned.join("\n\n").trim();
+  if (!content) {
+    throw new Error("Cleanup returned empty content");
+  }
+  return content;
 }
